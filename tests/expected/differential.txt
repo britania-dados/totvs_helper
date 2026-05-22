@@ -1,0 +1,2 @@
+REPLACENULL([nome],"") != REPLACENULL([nome_LKP],"")
+

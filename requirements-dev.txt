@@ -1,0 +1,9 @@
+-r requirements.txt
+black
+Pillow
+mypy
+pytest-cov
+pytest
+ruff
+pyinstaller
+
