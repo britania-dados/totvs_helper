@@ -188,6 +188,7 @@ Após validar o build, copie `TotvsHelper.exe` (e atualize o `.env` se necessár
 
 ## Roadmap
 
-- Melhorar segurança das credenciais com Windows DPAPI.
-- Permitir múltiplos perfis de conexão DSN por ambiente.
-- Expandir testes de regressão para mais tabelas de referência.
+O planejamento detalhado está em [TODO.md](TODO.md).
+
+**Próximo passo:** apoio a **cargas Pentaho (PDI)** — snippets de extração TOTVS, carga no SQL Server e diferencial incremental, no mesmo espírito da aba “Diferencial SSIS”.
+
