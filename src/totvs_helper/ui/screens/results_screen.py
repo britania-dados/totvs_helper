@@ -37,15 +37,17 @@ class ResultsScreen(ctk.CTkFrame):
         on_save: Callable[[], None],
         on_save_default: Callable[[], None],
         on_script_options_changed: Callable[[], None],
+        on_generate_pentaho: Callable[[], None],
         **kwargs,
     ) -> None:
         super().__init__(master, fg_color="transparent", **kwargs)
         self._tokens = tokens
         self._on_script_options_changed = on_script_options_changed
+        self._on_generate_pentaho = on_generate_pentaho
         self._updating_options = False
         self._active_key = "query_etl"
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(3, weight=1)
 
         page_header = ctk.CTkFrame(self, fg_color="transparent")
         page_header.grid(row=0, column=0, sticky="ew", padx=4, pady=(12, 8))
@@ -101,7 +103,7 @@ class ResultsScreen(ctk.CTkFrame):
         ).pack(side="left", padx=3)
 
         self._context_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self._context_frame.grid(row=1, column=0, sticky="ew", padx=4, pady=(0, 12))
+        self._context_frame.grid(row=1, column=0, sticky="ew", padx=4, pady=(0, 8))
         self._context_frame.grid_columnconfigure(4, weight=1)
 
         self._dsn_chip = ctk.CTkLabel(
@@ -138,8 +140,36 @@ class ResultsScreen(ctk.CTkFrame):
             font=ctk.CTkFont(size=12),
             command=self._on_script_option_changed,
         )
-        self._switch_multi_company.select()
         self._switch_multi_company.grid(row=0, column=3, pady=4, sticky="w")
+
+        self._export_bar = ctk.CTkFrame(
+            self,
+            fg_color=tokens.surface,
+            border_color=tokens.border,
+            border_width=1,
+            corner_radius=RADIUS["md"],
+        )
+        self._export_bar.grid(row=2, column=0, sticky="ew", padx=4, pady=(0, 12))
+        self._export_bar.grid_columnconfigure(0, weight=1)
+
+        self._pentaho_btn = ctk.CTkButton(
+            self._export_bar,
+            text="Gerar carga Pentaho (PDI)",
+            font=ctk.CTkFont(size=15, weight="bold"),
+            height=52,
+            fg_color=tokens.accent,
+            hover_color=tokens.accent_hover,
+            text_color="#ffffff",
+            corner_radius=RADIUS["md"],
+            command=on_generate_pentaho,
+        )
+        self._pentaho_btn.grid(
+            row=0,
+            column=0,
+            sticky="ew",
+            padx=SPACING["md"],
+            pady=SPACING["md"],
+        )
 
         self._script_card = ctk.CTkFrame(
             self,
@@ -148,7 +178,7 @@ class ResultsScreen(ctk.CTkFrame):
             border_width=1,
             corner_radius=RADIUS["lg"],
         )
-        self._script_card.grid(row=2, column=0, sticky="nsew", padx=4, pady=(0, 4))
+        self._script_card.grid(row=3, column=0, sticky="nsew", padx=4, pady=(0, 4))
         self._script_card.grid_columnconfigure(0, weight=1)
         self._script_card.grid_rowconfigure(2, weight=1)
 
@@ -289,6 +319,14 @@ class ResultsScreen(ctk.CTkFrame):
 
     def update_tokens(self, tokens: ThemeTokens) -> None:
         self._tokens = tokens
+        self._export_bar.configure(
+            fg_color=tokens.surface,
+            border_color=tokens.border,
+        )
+        self._pentaho_btn.configure(
+            fg_color=tokens.accent,
+            hover_color=tokens.accent_hover,
+        )
         self._script_card.configure(
             fg_color=tokens.surface,
             border_color=tokens.border,

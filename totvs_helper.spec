@@ -20,6 +20,7 @@ a = Analysis(
         ("assets/totvs_helper.ico", "assets"),
         ("assets/splash.png", "assets"),
         ("assets/splash_logo_ui.png", "assets"),
+        ("packaging/pentaho/templates", "packaging/pentaho/templates"),
     ]
     + collect_data_files("customtkinter"),
     hiddenimports=[

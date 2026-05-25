@@ -1,0 +1,31 @@
+---
+description: Templates Pentaho KJB/KTR e módulos pentaho_*
+globs: packaging/pentaho/**
+alwaysApply: false
+---
+
+# Pentaho PDI 9.4
+
+Documentação: [docs/ai/PENTAHO.md](../../docs/ai/PENTAHO.md).
+
+## Templates (`packaging/pentaho/templates/`)
+
+| Pasta | Cenário |
+|-------|---------|
+| `multi_esp2unit` | 5 fontes ESP2UNIT |
+| `multi_ems2unit` | 5 fontes EMS2UNIT + SV DATASUL |
+| `non_multi_wms` | BASE VAREJO/ECOM |
+| `non_multi_esp2corp` | BASE VAREJO/ECOM corp |
+
+Arquivos: `wkf_TEMPLATE.kjb`, `dataflows/dtf_TEMPLATE.ktr`.
+
+## Ao editar XML
+
+- Validar com `xml.etree.ElementTree.fromstring` nos testes.
+- SortRows: descobrir nomes via hops (`discover_sort_step_names`), não assumir `SORT STAGE`.
+- Após mudar passos, rodar `apply_field_metadata` + `apply_ktr_gui_layout`.
+
+## Proibido sem alinhamento
+
+- Modo full/truncate ou jobs `dtf_ecom_*` paralelos.
+- Reutilizar coordenadas GUI de um perfil em outro template.

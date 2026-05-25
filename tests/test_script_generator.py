@@ -47,6 +47,10 @@ def test_generate_helpers_includes_free_fields_when_enabled():
     assert 'SUBSTRING("char-1",1,10)' in scripts.query_etl
     assert "[char-1] [varchar](10)" in scripts.ddl_create
     assert "[empresa]" not in scripts.ddl_create
+    assert "[BASE] [varchar](8)" in scripts.ddl_create
+    assert "    [BASE] " in scripts.ddl_create
+    assert '"BASE"' in scripts.query_etl
+    assert "[BASE] = ?" in scripts.script_update
 
 
 def test_generate_helpers_maps_binary_type_to_varbinary_max():

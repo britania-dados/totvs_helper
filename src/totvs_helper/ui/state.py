@@ -71,7 +71,7 @@ class SessionState:
     view: SidebarView = SidebarView.DSN
     selected_odbc: Optional[str] = None
     selected_table: Optional[str] = None
-    include_free_fields: bool = False
+    include_free_fields: bool = True
     multi_company: bool = True
     tables: List[str] = field(default_factory=list)
     connection: Optional["Connection"] = None
@@ -84,7 +84,7 @@ class SessionState:
         self.view = SidebarView.DSN
         self.selected_odbc = None
         self.selected_table = None
-        self.include_free_fields = False
+        self.include_free_fields = True
         self.multi_company = True
         self.tables = []
         self.scripts = None

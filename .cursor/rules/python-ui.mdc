@@ -1,0 +1,31 @@
+---
+description: UI CustomTkinter — telas, widgets, app_window, estado
+globs: src/totvs_helper/ui/**/*
+alwaysApply: false
+---
+
+# UI (`ui/`)
+
+## Orquestração
+
+- `app_window.py` — `TotvsHelperApp`, `_run_async`, wiring ODBC/serviços.
+- `state.py` — `SessionState` (dsn, table, fields, pk, scripts, flags).
+- Fluxo: `screens/dsn_screen` → `table_screen` → `results_screen`.
+
+## Padrões
+
+- Tokens: `design_tokens.py`, `theme.py`.
+- Labels e mensagens em **português**.
+- Operações longas: worker thread + `queue` + `after()`.
+- `history_panel`: preferir `grid_remove` a `destroy` no container.
+
+## Pentaho na UI
+
+- Botão **Gerar carga Pentaho (PDI)** em `results_screen` (faixa `_export_bar`).
+- Handler: `_generate_pentaho_load` em `app_window`.
+- Defaults multi/campos livres: `_apply_dsn_option_defaults` + `pentaho_constants.is_multi_company_dsn`.
+
+## Tk
+
+- Fontes CTk só após root válido (splash em `app/main.py`).
+- Evitar lógica SQL na UI — chamar `ScriptGenerator` / `PentahoExporter`.

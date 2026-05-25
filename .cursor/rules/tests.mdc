@@ -1,0 +1,25 @@
+---
+description: Testes pytest — golden SQL, Pentaho XML, ODBC mocks
+globs: tests/**/*
+alwaysApply: false
+---
+
+# Testes
+
+- `pytest` com `pythonpath = src` (ver `pyproject.toml`).
+- SQL estável: `tests/expected/` + `test_script_generator.py`.
+- Pentaho: asserts em substring/XML, não exige Spoon instalado.
+- UI: limitada (Tk headless); priorizar testes de serviços.
+
+## Comandos
+
+```powershell
+$env:PYTHONPATH = "src"
+pytest tests/test_pentaho_exporter.py tests/test_pentaho_layout.py -q
+```
+
+## Ao adicionar testes
+
+- Cobrir comportamento real, não mocks triviais.
+- KTR gerado deve ser XML válido (`ElementTree.fromstring`).
+- Atualizar `tests/expected/` se mudar contrato SQL documentado.

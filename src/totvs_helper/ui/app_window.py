@@ -16,6 +16,11 @@ import customtkinter as ctk
 
 from totvs_helper import __version__
 from totvs_helper.infra.odbc_client import OdbcClient
+from totvs_helper.services.pentaho_constants import (
+    DEFAULT_INCLUDE_FREE_FIELDS,
+    is_multi_company_dsn,
+)
+from totvs_helper.services.pentaho_exporter import PentahoExporter
 from totvs_helper.services.script_generator import GeneratedScripts, ScriptGenerator
 from totvs_helper.services.txt_exporter import build_export_text
 from totvs_helper.ui.preferences import (
@@ -34,7 +39,12 @@ from totvs_helper.ui.theme import (
     resolve_appearance,
     tokens,
 )
-from totvs_helper.ui.tk_dialogs import ask_ok_cancel, ask_save_filename, ask_yes_no
+from totvs_helper.ui.tk_dialogs import (
+    ask_directory,
+    ask_ok_cancel,
+    ask_save_filename,
+    ask_yes_no,
+)
 from totvs_helper.ui.widgets import (
     ErrorBanner,
     LoadingOverlay,
@@ -72,6 +82,7 @@ class TotvsHelperApp:
     ) -> None:
         self._odbc = odbc_client
         self._generator = script_generator
+        self._pentaho = PentahoExporter(script_generator)
         self._state = SessionState()
         self._prefs = load_preferences()
         self._busy = False
@@ -172,6 +183,7 @@ class TotvsHelperApp:
             on_save=self._save_txt,
             on_save_default=self._save_to_default_dir,
             on_script_options_changed=self._on_results_script_options_changed,
+            on_generate_pentaho=self._generate_pentaho_load,
         )
         self._history_panel = HistoryPanel(
             self._content,
@@ -499,6 +511,7 @@ class TotvsHelperApp:
         self._selected_dsn = value
         self._state.selected_odbc = value
         self._dsn_screen.select_value(value)
+        self._apply_dsn_option_defaults(value)
         self._set_status(f"DSN: {value}")
 
     def _select_table(self, value: str) -> None:
@@ -574,6 +587,7 @@ class TotvsHelperApp:
             self._table_screen.preview.reset()
             self._table_screen.set_items(tables)
             self._table_screen.set_dsn_context(dsn)
+            self._apply_dsn_option_defaults(dsn)
             self._table_screen.render_recent(
                 [t for t in self._prefs.recent_tables if t in tables],
                 on_pick=self._select_table,
@@ -672,14 +686,17 @@ class TotvsHelperApp:
         )
 
     def _sync_table_option_checkboxes(self) -> None:
-        if self._state.include_free_fields:
-            self._table_screen.chk_free_fields.select()
-        else:
-            self._table_screen.chk_free_fields.deselect()
-        if self._state.multi_company:
-            self._table_screen.chk_multi_company.select()
-        else:
-            self._table_screen.chk_multi_company.deselect()
+        self._table_screen.apply_option_defaults(
+            include_free_fields=self._state.include_free_fields,
+            multi_company=self._state.multi_company,
+        )
+
+    def _apply_dsn_option_defaults(self, dsn: str) -> None:
+        """Set Multi-empresa from DSN family; keep campos livres default on."""
+        self._apply_script_options(
+            DEFAULT_INCLUDE_FREE_FIELDS,
+            is_multi_company_dsn(dsn),
+        )
 
     def _apply_script_options(
         self, include_free_fields: bool, multi_company: bool
@@ -820,6 +837,61 @@ class TotvsHelperApp:
         self._state.history.clear()
         self._history_panel.set_entries([])
         self._toast.show("Histórico limpo", "info")
+
+    def _generate_pentaho_load(self) -> None:
+        table = (self._state.selected_table or "").strip()
+        dsn = self._state.selected_odbc or ""
+        if not table or not dsn:
+            self._toast.show("Gere os scripts antes de exportar a carga Pentaho.", "warning")
+            return
+
+        initial_dir = self._prefs.export_directory()
+        output_dir = ask_directory(
+            parent=self.root,
+            title="Pasta para gerar wkf/dtf Pentaho",
+            initialdir=initial_dir,
+        )
+        if not output_dir:
+            return
+
+        fields, pk_fields = self._table_screen.preview.get_field_cache()
+        connection = self._state.connection
+
+        def work() -> Path:
+            if not fields and connection is not None:
+                recid = self._odbc.get_table_recid(table)
+                loaded_fields, loaded_pk = self._odbc.list_fields_and_pk(
+                    recid, connection
+                )
+                use_fields = list(loaded_fields)
+                use_pk = loaded_pk
+            else:
+                use_fields = list(fields)
+                use_pk = list(pk_fields)
+            if not use_fields:
+                raise ValueError("Metadados da tabela indisponíveis para gerar a carga.")
+            result = self._pentaho.generate(
+                Path(output_dir),
+                progress_table=table,
+                dsn=dsn,
+                fields=use_fields,
+                pk_fields=use_pk,
+                include_free_fields=self._state.include_free_fields,
+                multi_company=self._state.multi_company,
+            )
+            return result.job_path
+
+        def on_success(job_path: Path) -> None:
+            self._prefs.last_export_dir = str(job_path.parent.parent)
+            save_preferences(self._prefs)
+            self._set_status(f"Carga Pentaho: {job_path}", success=True)
+            self._toast.show("Carga Pentaho gerada com sucesso", "success")
+
+        self._run_async(
+            work,
+            busy_message=f"Gerando carga Pentaho {table}...",
+            on_success=on_success,
+        )
 
     def _copy_active_tab(self) -> None:
         text = self._results_screen.get_active_text()

@@ -40,15 +40,22 @@ class ScriptGenerator:
         ]
         table_formatted = selected_table.title().replace("-", "")
 
+        include_base = not multi_company
         query_etl = self._build_etl_query(
-            selected_table, filtered_fields, multi_company
+            selected_table, filtered_fields, multi_company, include_base=include_base
         )
         update_assignments, differential = self._build_update_parts(
             filtered_fields, pk_fields
         )
-        where_clause = self._build_where_clause(pk_fields, multi_company)
+        where_clause = self._build_where_clause(
+            pk_fields, multi_company, include_base=include_base
+        )
         ddl_create = self._build_ddl(
-            table_formatted, filtered_fields, pk_fields, multi_company
+            table_formatted,
+            filtered_fields,
+            pk_fields,
+            multi_company,
+            include_base=include_base,
         )
         script_update = self._build_update_statement(
             table_formatted, update_assignments, where_clause
@@ -68,10 +75,14 @@ class ScriptGenerator:
         selected_table: str,
         fields: list[Sequence],
         multi_company: bool,
+        *,
+        include_base: bool = False,
     ) -> str:
         projections: List[str] = []
         if multi_company:
             projections.append("    '' as \"empresa\"")
+        elif include_base:
+            projections.append("    '' as \"BASE\"")
 
         for field in fields:
             projections.append(self._map_etl_projection(field))
@@ -85,10 +96,14 @@ class ScriptGenerator:
         fields: list[Sequence],
         pk_fields: list[str],
         multi_company: bool,
+        *,
+        include_base: bool = False,
     ) -> str:
         ddl_lines = [f"CREATE TABLE [tot].[{table_formatted}] ("]
         if multi_company:
             ddl_lines.append("    [empresa] [varchar](2),")
+        elif include_base:
+            ddl_lines.append("    [BASE] [varchar](8),")
 
         for field in fields:
             field_name = field[0]
@@ -106,6 +121,8 @@ class ScriptGenerator:
 
         if multi_company:
             ddl_lines.append("    [empresa] ")
+        elif include_base:
+            ddl_lines.append("    [BASE] ")
         else:
             last_pk = ddl_lines.pop()
             ddl_lines.append(last_pk.rstrip(","))
@@ -140,10 +157,14 @@ class ScriptGenerator:
         return update_assignments, differential
 
     @staticmethod
-    def _build_where_clause(pk_fields: list[str], multi_company: bool) -> str:
+    def _build_where_clause(
+        pk_fields: list[str], multi_company: bool, *, include_base: bool = False
+    ) -> str:
         where_lines = [f"[{field}] = ?" for field in pk_fields]
         if multi_company:
             where_lines.append("[empresa] = ?")
+        elif include_base:
+            where_lines.append("[BASE] = ?")
         return "\n    AND ".join(where_lines)
 
     @staticmethod

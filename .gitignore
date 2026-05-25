@@ -143,6 +143,11 @@ cython_debug/
 *.swp
 *.swo
 
+# Cursor IDE — versionar regras do projeto (AGENTS.md, docs/ai/)
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+
 # Windows
 Thumbs.db
 ehthumbs.db

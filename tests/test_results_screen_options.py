@@ -21,6 +21,7 @@ def test_results_screen_script_options_sync_without_callback() -> None:
             on_save=lambda: None,
             on_save_default=lambda: None,
             on_script_options_changed=lambda: calls.append(1),
+            on_generate_pentaho=lambda: None,
         )
         screen.set_context(
             "DSN1",

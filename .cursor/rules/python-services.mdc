@@ -1,0 +1,28 @@
+---
+description: Serviços SQL e Pentaho — ScriptGenerator, ODBC helpers, export PDI
+globs: src/totvs_helper/services/**/*
+alwaysApply: false
+---
+
+# Serviços (`services/`)
+
+## ScriptGenerator (`script_generator.py`)
+
+- Entrada: `fields`, `pk_fields`, `table_name`, `include_free_fields`, `multi_company`.
+- Saída: `GeneratedScripts` (query, ddl, update, delete, differential).
+- Campos livres ignorados: `constants.FREE_FIELDS_TO_IGNORE`.
+- Não multi: coluna `[BASE] varchar(8)` na PK quando `multi_company=False`.
+- Testes golden: `tests/expected/*.sql`.
+
+## Pentaho (`pentaho_*.py`)
+
+- Templates: `packaging/pentaho/templates/`.
+- Ver [docs/ai/PENTAHO.md](../../docs/ai/PENTAHO.md).
+- **row-meta:** substituir bloco `<row-meta>...</row-meta>` inteiro (nunca aninhar tags).
+- Layout: perfis em `pentaho_layout.py` (ems2unit ≠ esp2unit).
+- Job: passo TRANS deve ser `dtf_{Entidade}`.
+
+## Convenções
+
+- Sem I/O de UI aqui; exceção: `PentahoExporter` escreve arquivos no path do usuário.
+- Type hints em código novo; manter compatibilidade Python 3.9.

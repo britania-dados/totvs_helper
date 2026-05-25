@@ -186,9 +186,17 @@ Após validar o build, copie `TotvsHelper.exe` (e atualize o `.env` se necessár
 - **Quero outra tabela:** use **Voltar** na etapa de resultados ou **Novo processo** para trocar o DSN.
 - **Interface travada:** aguarde o fim da conexão/geração (operações ODBC rodam em segundo plano).
 
+## Desenvolvimento com IA (Cursor, Claude Code, etc.)
+
+Documentação para assistentes de código e onboarding técnico:
+
+- **[AGENTS.md](AGENTS.md)** — ponto de entrada (mapa do projeto, comandos, armadilhas)
+- **[docs/ai/](docs/ai/)** — contexto, convenções e guia Pentaho
+- **`.cursor/rules/`** — regras Cursor aplicadas por área do código
+
 ## Roadmap
 
 O planejamento detalhado está em [TODO.md](TODO.md).
 
-**Próximo passo:** apoio a **cargas Pentaho (PDI)** — snippets de extração TOTVS, carga no SQL Server e diferencial incremental, no mesmo espírito da aba “Diferencial SSIS”.
+**v2.1.0:** botão **Carga Pentaho** na tela de scripts — gera `wkf_*.kjb` + `dataflows/dtf_*.ktr` (sync, PDI 9.4) a partir dos templates em `packaging/pentaho/templates/`. Multi-empresa: 5 fontes (`EMPRESA`); não multi: campo `BASE` (VAREJO/ECOM) em uma única tabela `tot.*`.
 

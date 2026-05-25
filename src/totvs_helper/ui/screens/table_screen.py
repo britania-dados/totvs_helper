@@ -65,8 +65,9 @@ class TableScreen(ctk.CTkFrame):
         self.chk_free_fields.grid(row=0, column=0, padx=(0, SPACING["lg"]), sticky="w")
 
         self.chk_multi_company = ctk.CTkCheckBox(options, text="Multi-empresa")
-        self.chk_multi_company.select()
         self.chk_multi_company.grid(row=0, column=1, sticky="w")
+
+        self.apply_option_defaults(include_free_fields=True, multi_company=True)
 
         self._recent_frame = ctk.CTkFrame(card.body, fg_color="transparent")
         self._recent_frame.grid(row=2, column=0, sticky="ew", pady=(0, SPACING["sm"]))
@@ -102,6 +103,19 @@ class TableScreen(ctk.CTkFrame):
         self.chk_multi_company.configure(state=state)
         for btn in self._recent_buttons:
             btn.configure(state=state)
+
+    def apply_option_defaults(
+        self, *, include_free_fields: bool, multi_company: bool
+    ) -> None:
+        """Sync Campos livres / Multi-empresa checkboxes."""
+        if include_free_fields:
+            self.chk_free_fields.select()
+        else:
+            self.chk_free_fields.deselect()
+        if multi_company:
+            self.chk_multi_company.select()
+        else:
+            self.chk_multi_company.deselect()
 
     def set_dsn_context(self, dsn: str) -> None:
         self._dsn_badge.configure(text=f"  Conectado: {dsn}  ")
