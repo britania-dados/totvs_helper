@@ -171,6 +171,7 @@ class TotvsHelperApp:
             on_copy_all=self._copy_all_tabs,
             on_save=self._save_txt,
             on_save_default=self._save_to_default_dir,
+            on_script_options_changed=self._on_results_script_options_changed,
         )
         self._history_panel = HistoryPanel(
             self._content,
@@ -670,6 +671,37 @@ class TotvsHelperApp:
             on_success=on_success,
         )
 
+    def _sync_table_option_checkboxes(self) -> None:
+        if self._state.include_free_fields:
+            self._table_screen.chk_free_fields.select()
+        else:
+            self._table_screen.chk_free_fields.deselect()
+        if self._state.multi_company:
+            self._table_screen.chk_multi_company.select()
+        else:
+            self._table_screen.chk_multi_company.deselect()
+
+    def _apply_script_options(
+        self, include_free_fields: bool, multi_company: bool
+    ) -> None:
+        self._state.include_free_fields = include_free_fields
+        self._state.multi_company = multi_company
+        self._sync_table_option_checkboxes()
+
+    def _on_results_script_options_changed(self) -> None:
+        include_free, multi_company = self._results_screen.get_script_options()
+        if (
+            include_free == self._state.include_free_fields
+            and multi_company == self._state.multi_company
+        ):
+            return
+        self._apply_script_options(include_free, multi_company)
+        self._regenerate_scripts(
+            push_history=False,
+            navigate_to_results=False,
+            success_toast=False,
+        )
+
     def _generate_scripts(self) -> None:
         table = (
             self._selected_table or self._table_screen.get_selected() or ""
@@ -685,8 +717,29 @@ class TotvsHelperApp:
 
         include_free = bool(self._table_screen.chk_free_fields.get())
         multi_company = bool(self._table_screen.chk_multi_company.get())
-        self._state.include_free_fields = include_free
-        self._state.multi_company = multi_company
+        self._apply_script_options(include_free, multi_company)
+        self._regenerate_scripts(
+            table=table,
+            push_history=True,
+            navigate_to_results=True,
+            success_toast=True,
+        )
+
+    def _regenerate_scripts(
+        self,
+        *,
+        table: Optional[str] = None,
+        push_history: bool,
+        navigate_to_results: bool,
+        success_toast: bool,
+    ) -> None:
+        table = (table or self._state.selected_table or "").strip()
+        connection = self._state.connection
+        if not table or connection is None:
+            return
+
+        include_free = self._state.include_free_fields
+        multi_company = self._state.multi_company
 
         def work() -> GeneratedScripts:
             fields, pk_fields = self._table_screen.preview.get_field_cache()
@@ -702,15 +755,21 @@ class TotvsHelperApp:
             )
 
         def on_success(scripts: GeneratedScripts) -> None:
-            self._prefs.add_recent_table(table)
-            save_preferences(self._prefs)
+            if push_history:
+                self._prefs.add_recent_table(table)
+                save_preferences(self._prefs)
             self._state.scripts = scripts
             self._state.selected_table = table
-            self._push_history(table, scripts)
+            if push_history:
+                self._push_history(table, scripts)
             self._display_results(scripts, table)
-            self._show_view(SidebarView.RESULTS)
+            if navigate_to_results:
+                self._show_view(SidebarView.RESULTS)
             self._set_status("Scripts gerados.", success=True)
-            self._toast.show("Scripts gerados com sucesso", "success")
+            if success_toast:
+                self._toast.show("Scripts gerados com sucesso", "success")
+            elif push_history is False:
+                self._toast.show("Scripts atualizados", "info")
 
         self._run_async(
             work,
@@ -739,16 +798,20 @@ class TotvsHelperApp:
         }
         self._results_screen.set_scripts(mapping)
         dsn = self._state.selected_odbc or ""
-        self._results_screen.set_context_chips(
-            dsn, table, self._state.include_free_fields, self._state.multi_company
+        self._results_screen.set_context(
+            dsn,
+            table,
+            include_free_fields=self._state.include_free_fields,
+            multi_company=self._state.multi_company,
         )
 
     def _restore_history_entry(self, entry: HistoryEntry) -> None:
         self._state.scripts = entry.scripts
         self._state.selected_table = entry.table
         self._state.selected_odbc = entry.dsn
-        self._state.include_free_fields = entry.include_free_fields
-        self._state.multi_company = entry.multi_company
+        self._apply_script_options(
+            entry.include_free_fields, entry.multi_company
+        )
         self._display_results(entry.scripts, entry.table)
         self._show_view(SidebarView.RESULTS)
         self._toast.show(f"Restaurado: {entry.table}", "info")

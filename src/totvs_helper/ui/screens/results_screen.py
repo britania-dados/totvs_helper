@@ -36,10 +36,13 @@ class ResultsScreen(ctk.CTkFrame):
         on_copy_all: Callable[[], None],
         on_save: Callable[[], None],
         on_save_default: Callable[[], None],
+        on_script_options_changed: Callable[[], None],
         **kwargs,
     ) -> None:
         super().__init__(master, fg_color="transparent", **kwargs)
         self._tokens = tokens
+        self._on_script_options_changed = on_script_options_changed
+        self._updating_options = False
         self._active_key = "query_etl"
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
@@ -97,8 +100,46 @@ class ResultsScreen(ctk.CTkFrame):
             width=130,
         ).pack(side="left", padx=3)
 
-        self._chips_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self._chips_frame.grid(row=1, column=0, sticky="ew", padx=4, pady=(0, 12))
+        self._context_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self._context_frame.grid(row=1, column=0, sticky="ew", padx=4, pady=(0, 12))
+        self._context_frame.grid_columnconfigure(4, weight=1)
+
+        self._dsn_chip = ctk.CTkLabel(
+            self._context_frame,
+            text="",
+            fg_color=tokens.surface_alt,
+            corner_radius=6,
+            font=ctk.CTkFont(size=11),
+            height=26,
+        )
+        self._dsn_chip.grid(row=0, column=0, padx=(0, 6), pady=4, sticky="w")
+
+        self._table_chip = ctk.CTkLabel(
+            self._context_frame,
+            text="",
+            fg_color=tokens.surface_alt,
+            corner_radius=6,
+            font=ctk.CTkFont(size=11),
+            height=26,
+        )
+        self._table_chip.grid(row=0, column=1, padx=(0, SPACING["lg"]), pady=4, sticky="w")
+
+        self._switch_free_fields = ctk.CTkSwitch(
+            self._context_frame,
+            text="Campos livres",
+            font=ctk.CTkFont(size=12),
+            command=self._on_script_option_changed,
+        )
+        self._switch_free_fields.grid(row=0, column=2, padx=(0, SPACING["lg"]), pady=4, sticky="w")
+
+        self._switch_multi_company = ctk.CTkSwitch(
+            self._context_frame,
+            text="Multi-empresa",
+            font=ctk.CTkFont(size=12),
+            command=self._on_script_option_changed,
+        )
+        self._switch_multi_company.select()
+        self._switch_multi_company.grid(row=0, column=3, pady=4, sticky="w")
 
         self._script_card = ctk.CTkFrame(
             self,
@@ -164,6 +205,11 @@ class ResultsScreen(ctk.CTkFrame):
 
         self._show_tab("query_etl")
 
+    def _on_script_option_changed(self) -> None:
+        if self._updating_options:
+            return
+        self._on_script_options_changed()
+
     def _on_segment_changed(self, value: str) -> None:
         key = TAB_BY_LABEL.get(value)
         if key:
@@ -188,26 +234,41 @@ class ResultsScreen(ctk.CTkFrame):
         self._segmented.set(label)
         self._show_tab(key)
 
-    def set_context_chips(
-        self, dsn: str, table: str, free_fields: bool, multi: bool
+    def set_context(
+        self,
+        dsn: str,
+        table: str,
+        *,
+        include_free_fields: bool,
+        multi_company: bool,
     ) -> None:
-        for child in self._chips_frame.winfo_children():
-            child.destroy()
-        chips = [
-            f"DSN: {dsn}",
-            f"Tabela: {table}",
-            f"Campos livres: {'sim' if free_fields else 'não'}",
-            f"Multi-empresa: {'sim' if multi else 'não'}",
-        ]
-        for index, text in enumerate(chips):
-            ctk.CTkLabel(
-                self._chips_frame,
-                text=f"  {text}  ",
-                fg_color=self._tokens.surface_alt,
-                corner_radius=6,
-                font=ctk.CTkFont(size=11),
-                height=26,
-            ).grid(row=0, column=index, padx=(0, 6), pady=4)
+        """Show DSN/table chips and sync option switches without firing callbacks."""
+        self._dsn_chip.configure(text=f"  DSN: {dsn}  ")
+        self._table_chip.configure(text=f"  Tabela: {table}  ")
+        self.set_script_options(include_free_fields, multi_company)
+
+    def set_script_options(
+        self, include_free_fields: bool, multi_company: bool
+    ) -> None:
+        """Update switches without triggering regeneration."""
+        self._updating_options = True
+        try:
+            if include_free_fields:
+                self._switch_free_fields.select()
+            else:
+                self._switch_free_fields.deselect()
+            if multi_company:
+                self._switch_multi_company.select()
+            else:
+                self._switch_multi_company.deselect()
+        finally:
+            self._updating_options = False
+
+    def get_script_options(self) -> Tuple[bool, bool]:
+        return (
+            bool(self._switch_free_fields.get()),
+            bool(self._switch_multi_company.get()),
+        )
 
     def set_scripts(self, mapping: Dict[str, str]) -> None:
         for key, editor in self._editors.items():
@@ -233,5 +294,7 @@ class ResultsScreen(ctk.CTkFrame):
             border_color=tokens.border,
         )
         self._editor_host.configure(fg_color=tokens.list_bg)
+        for chip in (self._dsn_chip, self._table_chip):
+            chip.configure(fg_color=tokens.surface_alt)
         for editor in self._editors.values():
             editor.update_tokens(tokens)
