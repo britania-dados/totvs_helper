@@ -1,5 +1,15 @@
 # Changelog
 
+Todas as mudanças relevantes do projeto são registradas neste arquivo.  
+**Desenvolvedores e agentes de IA:** ao entregar código ou correções, atualize esta seção na versão em desenvolvimento (ver [CONVENTIONS.md](docs/ai/CONVENTIONS.md#changelog)).
+
+## 2.1.2
+
+### Documentação
+
+- Regra explícita: toda entrega com mudança de comportamento, build ou contrato deve atualizar **`CHANGELOG.md`** antes de concluir a tarefa.
+- Orientação reforçada em `AGENTS.md`, `docs/ai/CONVENTIONS.md`, `docs/ai/README.md` e `.cursor/rules/totvs-helper-core.mdc`.
+
 ## 2.1.1
 
 ### Adicionado

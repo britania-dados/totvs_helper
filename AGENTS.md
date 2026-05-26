@@ -9,8 +9,9 @@ Documentação complementar:
 | [README.md](README.md) | Instalação, build, uso humano, troubleshooting |
 | [docs/ai/ARCHITECTURE.md](docs/ai/ARCHITECTURE.md) | Camadas, fluxo, onde alterar código |
 | [docs/ai/PROJECT_CONTEXT.md](docs/ai/PROJECT_CONTEXT.md) | Domínio, fluxos, módulos |
-| [docs/ai/CONVENTIONS.md](docs/ai/CONVENTIONS.md) | Padrões de código, testes, git, o que evitar |
+| [docs/ai/CONVENTIONS.md](docs/ai/CONVENTIONS.md) | Padrões de código, testes, git, changelog, o que evitar |
 | [docs/ai/PENTAHO.md](docs/ai/PENTAHO.md) | Geração de cargas PDI 9.4 (`.kjb` / `.ktr`) |
+| [CHANGELOG.md](CHANGELOG.md) | Histórico de versões — **obrigatório atualizar** em entregas com mudança visível |
 | [TODO.md](TODO.md) | Roadmap (próximo: **carga SSIS**) |
 
 Regras Cursor (aplicadas automaticamente no IDE): `.cursor/rules/*.mdc`
@@ -28,7 +29,7 @@ Regras Cursor (aplicadas automaticamente no IDE): `.cursor/rules/*.mdc`
 
 **Cliente / contexto:** Britânia Eletrodomésticos. UI em português; mensagens de erro e labels para usuário final em PT-BR.
 
-**Versão atual:** `src/totvs_helper/version.py` (`__version__`, hoje `2.1.1`). Bump: `python scripts/bump_version.py X.Y.Z`.
+**Versão atual:** `src/totvs_helper/version.py` (`__version__`, hoje `2.1.2`). Bump: `python scripts/bump_version.py X.Y.Z`. Ao bumpar, atualize também **`CHANGELOG.md`**.
 
 ---
 
@@ -136,6 +137,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_exe.ps1 -Python64 pytho
 - [ ] `ruff` / testes relevantes passando
 - [ ] Textos de UI em português, consistentes com telas existentes
 - [ ] Se mexer em Pentaho: validar XML bem formado e layout do perfil correto
+- [ ] **`CHANGELOG.md` atualizado** (bugfix, feature, build, breaking change ou doc que muda processo do time)
 - [ ] Não commitar `.env`, `dist/`, `build/`, `build_32b/`, `build_64b/`, `.mypy_cache/`
 - [ ] Atualizar `docs/ai/*` ou `AGENTS.md` só se mudou arquitetura ou contratos importantes
 

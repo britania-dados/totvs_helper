@@ -70,6 +70,29 @@ pytest tests/test_script_generator.py tests/test_pentaho_exporter.py -q
 - Ao bump de versão: `python scripts/bump_version.py X.Y.Z` (atualiza `version.py` e `windows_version_info.txt`). O build gera `windows_version_info.build.txt` no spec.
 - `pyproject.toml` usa version dinâmica do attr acima.
 
+## Changelog
+
+**Obrigatório** atualizar [`CHANGELOG.md`](../../CHANGELOG.md) ao concluir qualquer entrega que altere o produto ou o processo do repositório.
+
+Inclua uma entrada na seção da versão atual (ou crie uma nova, após bump com `bump_version.py`), usando as categorias já adotadas:
+
+| Categoria | Quando usar |
+|-----------|-------------|
+| **Adicionado** | Feature nova, script, tela, exportador, teste relevante |
+| **Alterado** | Comportamento, build, refatoração com impacto para quem usa/mantém |
+| **Corrigido** | Bugfix |
+| **Removido** | API, flag, arquivo ou fluxo descontinuado |
+
+**Não precisa** changelog para typos isolados em comentário ou ajuste puramente interno sem efeito para usuário/dev — use critério; na dúvida, registre.
+
+Ordem do fluxo recomendado:
+
+1. Implementar a mudança.
+2. Atualizar `CHANGELOG.md`.
+3. Se a entrega for release: `python scripts/bump_version.py X.Y.Z` e alinhar a nova seção no changelog.
+
+Agentes de IA: tratar `CHANGELOG.md` como parte da definição de pronto, no mesmo nível de testes passando.
+
 ---
 
 ## Segurança
@@ -83,6 +106,7 @@ pytest tests/test_script_generator.py tests/test_pentaho_exporter.py -q
 ## Documentação
 
 - README: usuário final + dev setup.
+- **`CHANGELOG.md`:** histórico de versões — **atualizar em toda entrega relevante** (ver seção [Changelog](#changelog) acima).
 - `docs/ai/*` + `AGENTS.md`: agentes e onboarding técnico.
 - `TODO.md`: roadmap; não duplicar roadmap longo no README.
 
