@@ -46,7 +46,7 @@ A UI não contém regras SQL; só orquestra e exibe resultados.
   4. todas as linhas de `_file`
   5. fallback: catálogo ODBC (`cursor.tables`, schema `PUB` ou vazio)
 - **Índices / PK:** lê `_prime-index` quando possível; várias queries de fallback em `list_table_indexes`.
-- **Preview:** `SELECT TOP n` + fatia em Python (OpenEdge não suporta `SKIP` de forma confiável).
+- **Preview:** `SELECT TOP n` + fatia em Python (OpenEdge não suporta `SKIP` de forma confiável). Colunas blob/binárias são omitidas; no máximo 64 colunas (PK primeiro) — tabelas largas como `emitente`.
 - **Conexão:** credenciais primárias, depois fallback do `.env`; falha → `OdbcConnectionError`.
 
 ## Erros (`errors.py`)

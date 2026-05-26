@@ -77,6 +77,7 @@ class AppActions:
                 table,
                 fields,
                 connection,
+                pk_fields=pk_fields,
                 offset=offset,
             )
         except RuntimeError as exc:

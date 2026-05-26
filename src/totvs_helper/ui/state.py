@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, List, Optional
 if TYPE_CHECKING:
     from pyodbc import Connection
 
+    from totvs_helper.infra.odbc_client import FieldMeta
     from totvs_helper.services.script_generator import GeneratedScripts
 
 
@@ -32,7 +33,13 @@ class HistoryEntry:
     multi_company: bool
     scripts: "GeneratedScripts"
     ecom_keys: bool = False
+    table_fields: List["FieldMeta"] = field(default_factory=list)
+    table_pk_fields: List[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
+
+    @property
+    def history_key(self) -> tuple[str, str]:
+        return (self.dsn.casefold(), self.table.casefold())
 
     @property
     def label(self) -> str:
@@ -42,12 +49,14 @@ class HistoryEntry:
 
 @dataclass
 class SessionHistory:
-    """In-memory history capped at 10 entries."""
+    """Generation history (persisted on disk, capped at 20 entries)."""
 
     entries: List[HistoryEntry] = field(default_factory=list)
-    max_entries: int = 10
+    max_entries: int = 20
 
     def add(self, entry: HistoryEntry) -> None:
+        key = entry.history_key
+        self.entries = [e for e in self.entries if e.history_key != key]
         self.entries.insert(0, entry)
         self.entries = self.entries[: self.max_entries]
 
@@ -66,6 +75,8 @@ class SessionState:
     multi_company: bool = True
     ecom_keys: bool = False
     tables: List[str] = field(default_factory=list)
+    table_fields: List["FieldMeta"] = field(default_factory=list)
+    table_pk_fields: List[str] = field(default_factory=list)
     connection: Optional["Connection"] = None
     scripts: Optional["GeneratedScripts"] = None
     history: SessionHistory = field(default_factory=SessionHistory)
@@ -90,4 +101,6 @@ class SessionState:
         self.multi_company = True
         self.ecom_keys = False
         self.tables = []
+        self.table_fields = []
+        self.table_pk_fields = []
         self.scripts = None

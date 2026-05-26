@@ -4,6 +4,29 @@ Guia para humanos e agentes de IA manterem o código consistente.
 
 ---
 
+## Idioma
+
+O projeto é **em português** (padrão Britânia / time interno). Isso vale para artefatos voltados a pessoas, não para identificadores de código.
+
+| O quê | Idioma |
+|-------|--------|
+| UI (labels, toasts, erros ao usuário) | **Português** (PT-BR) |
+| [`CHANGELOG.md`](../../CHANGELOG.md) | **Português** |
+| Documentação (`README`, `docs/ai/*`, `AGENTS.md`, `TODO.md`) | **Português** |
+| **Mensagens de commit** | **Português** — assunto e corpo; frases completas; foco no *porquê* |
+| **Descrições de PR** (título e corpo) | **Português**, no mesmo espírito do commit |
+| Respostas de agentes de IA ao desenvolvedor | **Português**, salvo pedido explícito de inglês |
+| Código (nomes de módulos/funções/variáveis) | **Inglês** onde o arquivo já segue inglês |
+| Comentários no código | Inglês ou português conforme o arquivo; preferir o idioma já usado no arquivo |
+
+### Commits e PRs
+
+- **Não** usar inglês no título do commit só por hábito (`feat: add feature`); alinhar ao histórico do repositório.
+- Formato habitual: `tipo: versão X.Y.Z — resumo` ou `tipo: resumo` (ex.: `feat: versão 2.1.4 — chaves ECOM emitente`).
+- Tipos comuns: `feat`, `fix`, `docs`, `refactor`, `test` (prefixo em inglês é aceitável; **descrição em português**).
+
+---
+
 ## Python
 
 - **3.9** — `pyproject.toml` fixa `target-version = py39`.
@@ -58,7 +81,7 @@ pytest tests/test_script_generator.py tests/test_pentaho_exporter.py -q
 
 - **Não commitar** sem pedido explícito do usuário.
 - **Nunca** commitar `.env`, credenciais, `dist/`, `build/`, `build_32b/`, `build_64b/`, `.mypy_cache/`.
-- Mensagens de commit em **português**, frases completas (foco no porquê).
+- **Idioma:** commits e PRs em **português** — ver [Idioma](#idioma).
 - Não `git push --force` em `main`/`master`.
 - Não alterar `git config`.
 

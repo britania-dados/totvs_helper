@@ -3,6 +3,28 @@
 Todas as mudanças relevantes do projeto são registradas neste arquivo.  
 **Desenvolvedores e agentes de IA:** durante o ciclo de trabalho (antes do próximo commit versionado), **atualize apenas este changelog** na seção da versão atual; **não** incremente `__version__` a cada solicitação. O **PATCH** sobe **uma vez** por lote entregável, **após** o commit que fechou a versão anterior (ver [CONVENTIONS.md](docs/ai/CONVENTIONS.md#versionamento)).
 
+## 2.1.5
+
+### Adicionado
+
+- **Histórico persistente** (até 20 gerações) em `%APPDATA%\\TotvsHelper\\history.json` — restaura scripts após fechar o app.
+
+### Alterado
+
+- Toasts compactos no canto inferior direito; info neutro (sem vermelho de marca); clique para fechar; textos de feedback revisados.
+
+### Corrigido
+
+- Barra de status superior: erros e sucessos somem como o toast (✕ e auto-dismiss); mensagens de processamento não substituem o texto persistente.
+- Exportação Pentaho com metadados da geração de scripts (inclui restauração do histórico): inferência a partir do DDL salvo e reconexão ODBC sob demanda quando necessário.
+- Histórico: uma entrada por tabela (última data/hora); metadados de colunas persistidos para Pentaho.
+- Toast após conectar DSN: `place()` não aceita `width`/`height` no CustomTkinter — largura no construtor do frame e empilhamento por altura real do widget.
+- Pré-visualização de dados da tabela **emitente** (e outras muito largas): amostra ODBC omite colunas blob/binárias e limita a 64 colunas (PK primeiro), evitando falha no `SELECT TOP`.
+
+### Documentação
+
+- Seção **Idioma** em [CONVENTIONS.md](docs/ai/CONVENTIONS.md): projeto em português (UI, docs, changelog, **commits** e PRs); alinhamento em `AGENTS.md`, `docs/ai/README.md` e `.cursor/rules/totvs-helper-core.mdc`.
+
 ## 2.1.4
 
 ### Adicionado

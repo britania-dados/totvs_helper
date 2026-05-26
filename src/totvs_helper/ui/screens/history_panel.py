@@ -40,7 +40,7 @@ class HistoryPanel(ctk.CTkFrame):
 
         self._title = ctk.CTkLabel(
             header,
-            text="Histórico da sessão",
+            text="Histórico",
             font=subtitle_font(),
             text_color=tokens.text,
         )
@@ -68,7 +68,7 @@ class HistoryPanel(ctk.CTkFrame):
 
         self._empty_label = ctk.CTkLabel(
             self._scroll,
-            text="Nenhuma geração nesta sessão ainda.",
+            text="Nenhuma geração salva ainda.",
             text_color=tokens.text_muted,
         )
 

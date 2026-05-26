@@ -35,6 +35,34 @@ def test_session_history_cap() -> None:
     assert history.entries[0].table == "tab-4"
 
 
+def test_session_history_replaces_same_table() -> None:
+    history = SessionHistory()
+    scripts = _sample_scripts()
+    history.add(
+        HistoryEntry(
+            dsn="EMS2CORP",
+            table="emitente",
+            include_free_fields=True,
+            multi_company=True,
+            scripts=scripts,
+            created_at=datetime(2026, 5, 26, 17, 14),
+        )
+    )
+    history.add(
+        HistoryEntry(
+            dsn="EMS2CORP",
+            table="emitente",
+            include_free_fields=False,
+            multi_company=False,
+            scripts=scripts,
+            created_at=datetime(2026, 5, 26, 18, 37),
+        )
+    )
+    assert len(history.entries) == 1
+    assert history.entries[0].include_free_fields is False
+    assert history.entries[0].created_at.hour == 18
+
+
 def test_history_entry_label() -> None:
     entry = HistoryEntry(
         dsn="PROD",

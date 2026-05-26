@@ -7,7 +7,7 @@ Estes arquivos orientam **Cursor**, **Claude Code** e outros agentes de código 
 1. **[AGENTS.md](../../AGENTS.md)** — entrada rápida, mapa do repo, checklist, armadilhas.
 2. **[ARCHITECTURE.md](ARCHITECTURE.md)** — camadas, fluxo, onde alterar código.
 3. **[PROJECT_CONTEXT.md](PROJECT_CONTEXT.md)** — domínio, fluxos, módulos.
-4. **[CONVENTIONS.md](CONVENTIONS.md)** — Python, UI, testes, git, versionamento, **changelog**.
+4. **[CONVENTIONS.md](CONVENTIONS.md)** — Python, UI, testes, git, **idioma** (incl. commits em português), versionamento, **changelog**.
 5. **[CHANGELOG.md](../../CHANGELOG.md)** — histórico de versões (**obrigatório atualizar** nas entregas).
 6. **[PENTAHO.md](PENTAHO.md)** — export PDI 9.4 (somente se for mexer em cargas Pentaho).
 

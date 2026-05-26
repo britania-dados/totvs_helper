@@ -178,4 +178,5 @@ Fonte única: [TODO.md](../../TODO.md).
 | Não multi | Coluna `BASE` (ex. VAREJO/ECOM) unifica origens |
 | Stage | Conexão MSSQL `STAGE` nos KTR (destino da sync) |
 | Emitente ECOM | Chaves `cod-emitente` / `nome-abrev` remapeadas só na fonte ECOM — ver [PENTAHO.md — Emitente ECOM](PENTAHO.md#emitente-na-base-ecom-chaves-de-stage) |
+| Histórico | Até 20 gerações em `%APPDATA%\\TotvsHelper\\history.json` (scripts completos; botão Restaurar) |
 | Sync | Apenas `MergeRows` + `SynchronizeAfterMerge` (sem truncate full) |

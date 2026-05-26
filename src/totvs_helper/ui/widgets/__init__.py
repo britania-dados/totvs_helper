@@ -8,6 +8,7 @@ from totvs_helper.ui.widgets.searchable_list import SearchableList
 from totvs_helper.ui.widgets.settings_dialog import SettingsDialog
 from totvs_helper.ui.widgets.sidebar import Sidebar
 from totvs_helper.ui.widgets.sql_textbox import SqlTextbox
+from totvs_helper.ui.widgets.status_banner import StatusBanner
 from totvs_helper.ui.widgets.table_preview import TablePreviewPanel
 from totvs_helper.ui.widgets.toast import ToastManager
 
@@ -20,6 +21,7 @@ __all__ = [
     "SettingsDialog",
     "Sidebar",
     "SqlTextbox",
+    "StatusBanner",
     "TablePreviewPanel",
     "ToastManager",
 ]

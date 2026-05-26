@@ -14,6 +14,45 @@ from totvs_helper.errors import OdbcConnectionError
 
 logger = logging.getLogger(__name__)
 
+# Preview sample: omit binary/large columns and cap width (emitente and similar).
+SAMPLE_SKIP_FETCH_TYPES = frozenset({"blob", "lvarbinary", "varbinary"})
+SAMPLE_SKIP_DATA_TYPES = frozenset({"blob"})
+SAMPLE_MAX_COLUMNS = 64
+
+
+def select_fields_for_sample(
+    fields: Sequence[FieldMeta],
+    pk_fields: Optional[Sequence[str]] = None,
+    *,
+    max_columns: int = SAMPLE_MAX_COLUMNS,
+) -> List[FieldMeta]:
+    """Columns safe for SELECT TOP preview (PK first, then metadata order)."""
+    eligible = [
+        field
+        for field in fields
+        if field.fetch_datatype not in SAMPLE_SKIP_FETCH_TYPES
+        and field.data_type not in SAMPLE_SKIP_DATA_TYPES
+    ]
+    if not eligible:
+        eligible = list(fields)
+
+    pk_set = {name for name in (pk_fields or ())}
+    selected: List[FieldMeta] = []
+    seen: set[str] = set()
+
+    for field in eligible:
+        if field.name in pk_set:
+            selected.append(field)
+            seen.add(field.name)
+    for field in eligible:
+        if field.name in seen:
+            continue
+        selected.append(field)
+        seen.add(field.name)
+        if len(selected) >= max_columns:
+            break
+    return selected[:max_columns]
+
 
 @dataclass(frozen=True)
 class FieldMeta:
@@ -263,6 +302,7 @@ class OdbcClient:
         fields: Sequence[FieldMeta],
         connection: Connection,
         *,
+        pk_fields: Optional[Sequence[str]] = None,
         limit: int = 10,
         offset: int = 0,
     ) -> Tuple[List[str], List[Tuple]]:
@@ -270,7 +310,8 @@ class OdbcClient:
         if not fields:
             return [], []
 
-        columns = [field.name for field in fields]
+        sample_fields = select_fields_for_sample(fields, pk_fields)
+        columns = [field.name for field in sample_fields]
         projections = ", ".join(f'"{name}"' for name in columns)
         row_offset = max(0, int(offset))
         page_size = max(1, int(limit))
@@ -287,9 +328,17 @@ class OdbcClient:
             page_rows = all_rows[row_offset : row_offset + page_size]
             return columns, page_rows
         except pyodbc.Error as exc:
-            raise RuntimeError(
-                f"Erro ao buscar amostra da tabela '{table_name}'."
-            ) from exc
+            detail = str(exc).strip()
+            message = f"Erro ao buscar amostra da tabela '{table_name}'."
+            if detail:
+                message = f"{message} {detail}"
+            logger.warning(
+                "Falha na amostra de %s (%d colunas): %s",
+                table_name,
+                len(columns),
+                detail or exc,
+            )
+            raise RuntimeError(message) from exc
         finally:
             cursor.close()
 

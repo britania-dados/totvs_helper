@@ -162,7 +162,7 @@ class ResultsScreen(ctk.CTkFrame):
 
         self._pentaho_btn = ctk.CTkButton(
             self._export_bar,
-            text="Gerar carga Pentaho (PDI)",
+            text="Gerar Carga Pentaho (PDI)",
             font=ctk.CTkFont(size=15, weight="bold"),
             height=52,
             fg_color=tokens.accent,

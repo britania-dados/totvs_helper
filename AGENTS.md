@@ -28,9 +28,9 @@ Regras Cursor (aplicadas automaticamente no IDE): `.cursor/rules/*.mdc`
 
 **Não** executa ETL, **não** conecta em SQL Server de produção para carga — apenas gera arquivos.
 
-**Cliente / contexto:** Britânia Eletrodomésticos. UI em português; mensagens de erro e labels para usuário final em PT-BR.
+**Cliente / contexto:** Britânia Eletrodomésticos. Projeto **em português**: UI, documentação, changelog, **mensagens de commit** e descrições de PR (ver [CONVENTIONS.md — Idioma](docs/ai/CONVENTIONS.md#idioma)). Código: identificadores em inglês onde o módulo já segue inglês.
 
-**Versão atual:** `src/totvs_helper/version.py` (`__version__`, hoje `2.1.4`).
+**Versão atual:** `src/totvs_helper/version.py` (`__version__`, hoje `2.1.5`).
 
 **Versionamento:** em toda entrega relevante, atualizar **`CHANGELOG.md`** na seção da versão atual. **Bump** (`python scripts/bump_version.py X.Y.Z`) **apenas uma vez por lote**, depois do commit que fechou a versão anterior — **não** a cada solicitação do agente. Detalhes: [CONVENTIONS.md — Versionamento](docs/ai/CONVENTIONS.md#versionamento).
 
@@ -167,6 +167,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_exe.ps1 -Python64 pytho
 
 ---
 
-## Idioma das respostas
+## Idioma
 
-Responder ao desenvolvedor em **português** (padrão do time), salvo se pedir inglês. Código: identificadores e comentários em inglês onde o arquivo já segue inglês; strings de UI em português.
+- **Português** para: UI, docs, `CHANGELOG.md`, **commits**, PRs e respostas ao desenvolvedor (salvo pedido de inglês).
+- **Inglês** para: nomes de código (funções, módulos) quando o arquivo já usa inglês; prefixos de tipo de commit (`feat:`, `fix:`) são opcionais — a **descrição** fica em português.
+- Detalhes e exemplos: [CONVENTIONS.md — Idioma](docs/ai/CONVENTIONS.md#idioma).

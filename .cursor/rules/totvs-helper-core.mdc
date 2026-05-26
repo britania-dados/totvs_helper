@@ -11,8 +11,8 @@ Leia [AGENTS.md](../../AGENTS.md) e [docs/ai/PROJECT_CONTEXT.md](../../docs/ai/P
 
 - App desktop **Windows**, Python **3.9**, **CustomTkinter**, **pyodbc** OpenEdge (até Fase 2).
 - Gera scripts SQL ETL + export **Pentaho PDI 9.4**; **não** executa cargas.
-- Cliente: Britânia. UI e toasts em **português**.
-- Versão: `src/totvs_helper/version.py` (**2.1.4**). Ao entregar: **`CHANGELOG.md`** na versão atual; **`bump_version.py`** só ao fechar lote pós-commit (não a cada tarefa). Ver `docs/ai/CONVENTIONS.md#versionamento`.
+- Cliente: Britânia. Projeto em **português** (UI, docs, changelog, **commits/PR**); código em inglês onde já for o padrão do arquivo. Ver `docs/ai/CONVENTIONS.md#idioma`.
+- Versão: `src/totvs_helper/version.py` (**2.1.5**). Ao entregar: **`CHANGELOG.md`** na versão atual; **`bump_version.py`** só ao fechar lote pós-commit (não a cada tarefa). Ver `docs/ai/CONVENTIONS.md#versionamento`.
 
 ## Roadmap
 

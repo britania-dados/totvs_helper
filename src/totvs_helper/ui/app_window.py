@@ -15,13 +15,15 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 import customtkinter as ctk
 
 from totvs_helper import __version__
-from totvs_helper.errors import user_message_for
+from totvs_helper.errors import TotvsHelperError, user_message_for
 from totvs_helper.infra.odbc_client import OdbcClient
 from totvs_helper.paths import assets_dir
+from totvs_helper.services.metadata_from_scripts import infer_metadata_from_scripts
 from totvs_helper.services.pentaho import PentahoExporter
 from totvs_helper.services.script_generator import GeneratedScripts, ScriptGenerator
 from totvs_helper.services.txt_exporter import build_export_text
 from totvs_helper.ui.app_actions import AppActions
+from totvs_helper.ui.history_store import load_history_entries, save_history_entries
 from totvs_helper.ui.preferences import (
     UserPreferences,
     load_preferences,
@@ -50,6 +52,7 @@ from totvs_helper.ui.widgets import (
     LoadingOverlay,
     SettingsDialog,
     Sidebar,
+    StatusBanner,
     ToastManager,
 )
 
@@ -104,8 +107,8 @@ class TotvsHelperApp:
         self._ui_queue: queue.Queue[Callable[[], None]] = queue.Queue()
         self._poll_ui_queue()
 
-        self._toast = ToastManager(self.root, self._t)
         self._build_layout()
+        self._load_persisted_history()
         self._sync_sidebar_states()
         self._show_view(SidebarView.DSN)
         self._load_dsn_list()
@@ -141,14 +144,18 @@ class TotvsHelperApp:
         self._error_banner = ErrorBanner(main, appearance_mode=self._appearance)
         self._error_banner.grid(row=0, column=0, sticky="ew", pady=(0, 8))
 
-        self._status_label = ctk.CTkLabel(
+        self._status_persistent = "Selecione um DSN OpenEdge."
+        self._status_banner = StatusBanner(
             main,
-            text="Selecione um DSN OpenEdge.",
-            font=ctk.CTkFont(size=12),
-            text_color=self._t.text_muted,
-            anchor="w",
+            self._t,
+            on_dismiss=self._restore_persistent_status,
         )
-        self._status_label.grid(row=1, column=0, sticky="ew", pady=(0, 8))
+        self._status_banner.grid(row=1, column=0, sticky="ew", pady=(0, 8))
+        self._status_banner.show(
+            self._status_persistent,
+            color=self._t.text_muted,
+            transient=False,
+        )
 
         self._content = ctk.CTkFrame(main, fg_color="transparent")
         self._content.grid(row=2, column=0, sticky="nsew")
@@ -234,6 +241,13 @@ class TotvsHelperApp:
             command=self._on_next,
         )
         self._btn_next.grid(row=0, column=4, sticky="e")
+
+        self._toast = ToastManager(
+            self._main,
+            self._t,
+            anchor_left=self._btn_exit,
+            anchor_right=self._btn_next,
+        )
 
     def _bind_shortcuts(self) -> None:
         bind_app_shortcuts(
@@ -417,17 +431,35 @@ class TotvsHelperApp:
             self._btn_next.configure(state="normal" if not self._busy else "disabled")
 
     def _set_status(
-        self, message: str, *, error: bool = False, success: bool = False
+        self,
+        message: str,
+        *,
+        error: bool = False,
+        success: bool = False,
+        transient: bool | None = None,
+        remember: bool = True,
     ) -> None:
+        if transient is None:
+            transient = bool(message) and (success or error)
         color = self._t.text_muted
         if error:
             color = self._t.danger
         elif success:
             color = self._t.success
-        self._status_label.configure(text=message, text_color=color)
+        if remember and not transient:
+            self._status_persistent = message
+        self._status_banner.show(message, color=color, transient=transient)
+
+    def _restore_persistent_status(self) -> None:
+        if self._status_persistent:
+            self._status_banner.show(
+                self._status_persistent,
+                color=self._t.text_muted,
+                transient=False,
+            )
 
     def _show_error(self, message: str) -> None:
-        self._set_status(message, error=True)
+        self._set_status(message, error=True, transient=True, remember=False)
         self._error_banner.show(message)
 
     def _set_busy(self, busy: bool, message: str = "") -> None:
@@ -441,7 +473,7 @@ class TotvsHelperApp:
             self._loading.hide()
             self._sync_footer_buttons()
         if message:
-            self._set_status(message)
+            self._set_status(message, remember=False)
 
     def _poll_ui_queue(self) -> None:
         """Drain UI callbacks queued from worker threads (Tk is not thread-safe)."""
@@ -557,7 +589,7 @@ class TotvsHelperApp:
 
         def on_success(_result: object) -> None:
             self._set_status(f"Conexão OK: {dsn}", success=True)
-            self._toast.show(f"Conexão com {dsn} OK", "success")
+            self._toast.show(f"Conectado a {dsn}.", "success")
 
         self._run_async(
             lambda: self._actions.test_connection(dsn),
@@ -603,7 +635,7 @@ class TotvsHelperApp:
                     success=True,
                 )
                 self._toast.show(
-                    f"{len(tables)} tabelas em {dsn}",
+                    f"{len(tables)} tabelas carregadas ({dsn}).",
                     "success",
                 )
             self.root.update_idletasks()
@@ -721,13 +753,17 @@ class TotvsHelperApp:
         if not table or connection is None:
             return
 
-        def work() -> GeneratedScripts:
+        def work() -> tuple[GeneratedScripts, list, list]:
             fields, pk_fields = self._table_screen.preview.get_field_cache()
             if not fields:
                 fields, pk_fields = self._actions.resolve_fields_for_table(table, [])
-            return self._actions.generate_scripts(table, fields, pk_fields)
+            scripts = self._actions.generate_scripts(table, fields, pk_fields)
+            return scripts, list(fields), list(pk_fields)
 
-        def on_success(scripts: GeneratedScripts) -> None:
+        def on_success(payload: tuple[GeneratedScripts, list, list]) -> None:
+            scripts, fields, pk_fields = payload
+            self._state.table_fields = fields
+            self._state.table_pk_fields = pk_fields
             if push_history:
                 self._prefs.add_recent_table(table)
                 save_preferences(self._prefs)
@@ -740,9 +776,9 @@ class TotvsHelperApp:
                 self._show_view(SidebarView.RESULTS)
             self._set_status("Scripts gerados.", success=True)
             if success_toast:
-                self._toast.show("Scripts gerados com sucesso", "success")
+                self._toast.show("Scripts gerados.", "success")
             elif push_history is False:
-                self._toast.show("Scripts atualizados", "info")
+                self._toast.show("Scripts recalculados.", "info")
 
         self._run_async(
             work,
@@ -759,8 +795,19 @@ class TotvsHelperApp:
             multi_company=self._state.multi_company,
             scripts=scripts,
             ecom_keys=self._state.ecom_keys,
+            table_fields=list(self._state.table_fields),
+            table_pk_fields=list(self._state.table_pk_fields),
         )
         self._state.history.add(entry)
+        self._persist_history()
+
+    def _load_persisted_history(self) -> None:
+        self._state.history.entries = load_history_entries()
+        self._history_panel.set_entries(self._state.history.entries)
+        self._persist_history()
+
+    def _persist_history(self) -> None:
+        save_history_entries(self._state.history.entries)
 
     def _display_results(self, scripts: GeneratedScripts, table: str) -> None:
         mapping = {
@@ -784,6 +831,13 @@ class TotvsHelperApp:
         self._state.scripts = entry.scripts
         self._state.selected_table = entry.table
         self._state.selected_odbc = entry.dsn
+        fields, pk_fields = self._metadata_for_history_entry(entry)
+        self._state.table_fields = fields
+        self._state.table_pk_fields = pk_fields
+        if fields and not entry.table_fields:
+            self._upsert_history_metadata(entry, fields, pk_fields)
+        self._status_persistent = f"DSN: {entry.dsn}"
+        self._set_status(f"Tabela: {entry.table}")
         self._apply_script_options(
             entry.include_free_fields,
             entry.multi_company,
@@ -791,12 +845,98 @@ class TotvsHelperApp:
         )
         self._display_results(entry.scripts, entry.table)
         self._show_view(SidebarView.RESULTS)
-        self._toast.show(f"Restaurado: {entry.table}", "info")
+        self._toast.show(
+            f"Scripts de {entry.table} restaurados do histórico.",
+            "success",
+        )
 
     def _clear_history(self) -> None:
         self._state.history.clear()
         self._history_panel.set_entries([])
-        self._toast.show("Histórico limpo", "info")
+        self._persist_history()
+        self._toast.show("Histórico apagado.", "success")
+
+    def _get_table_metadata_for_export(self) -> tuple[list, list]:
+        """Fields/PK from script generation, then preview cache."""
+        if self._state.table_fields:
+            return list(self._state.table_fields), list(self._state.table_pk_fields)
+        preview_fields, preview_pk = self._table_screen.preview.get_field_cache()
+        if preview_fields:
+            return list(preview_fields), list(preview_pk)
+        return [], []
+
+    def _metadata_for_history_entry(
+        self, entry: HistoryEntry
+    ) -> tuple[list, list]:
+        if entry.table_fields:
+            return list(entry.table_fields), list(entry.table_pk_fields)
+        return infer_metadata_from_scripts(entry.scripts)
+
+    def _upsert_history_metadata(
+        self, entry: HistoryEntry, fields: list, pk_fields: list
+    ) -> None:
+        updated = HistoryEntry(
+            dsn=entry.dsn,
+            table=entry.table,
+            include_free_fields=entry.include_free_fields,
+            multi_company=entry.multi_company,
+            scripts=entry.scripts,
+            ecom_keys=entry.ecom_keys,
+            table_fields=list(fields),
+            table_pk_fields=list(pk_fields),
+            created_at=entry.created_at,
+        )
+        key = entry.history_key
+        self._state.history.entries = [
+            updated if e.history_key == key else e for e in self._state.history.entries
+        ]
+        self._persist_history()
+
+    def _resolve_pentaho_metadata(
+        self, table: str, dsn: str, *, allow_odbc: bool
+    ) -> tuple[list, list]:
+        fields, pk_fields = self._get_table_metadata_for_export()
+        if fields:
+            return fields, pk_fields
+
+        scripts = self._state.scripts
+        if scripts:
+            fields, pk_fields = infer_metadata_from_scripts(scripts)
+            if fields:
+                self._state.table_fields = list(fields)
+                self._state.table_pk_fields = list(pk_fields)
+                same_ctx = (
+                    self._state.selected_table == table
+                    and self._state.selected_odbc == dsn
+                )
+                if same_ctx:
+                    hist_key = (dsn.casefold(), table.casefold())
+                    for entry in self._state.history.entries:
+                        if entry.history_key == hist_key:
+                            self._upsert_history_metadata(entry, fields, pk_fields)
+                            break
+                return fields, pk_fields
+
+        if allow_odbc and dsn:
+            connection = self._state.connection
+            close_after = False
+            if connection is None:
+                connection, _ = self._actions.connect(dsn)
+                close_after = True
+            try:
+                fields, pk_fields = self._actions.resolve_fields_for_table(table, [])
+            finally:
+                if close_after:
+                    try:
+                        connection.close()
+                    except Exception:
+                        pass
+            if fields:
+                self._state.table_fields = list(fields)
+                self._state.table_pk_fields = list(pk_fields)
+                return fields, pk_fields
+
+        return [], []
 
     def _generate_pentaho_load(self) -> None:
         table = (self._state.selected_table or "").strip()
@@ -816,9 +956,21 @@ class TotvsHelperApp:
         if not output_dir:
             return
 
-        fields, pk_fields = self._table_screen.preview.get_field_cache()
+        if self._state.scripts is None:
+            self._toast.show(
+                "Gere ou restaure os scripts antes de exportar a carga Pentaho.",
+                "warning",
+            )
+            return
 
         def work() -> Path:
+            fields, pk_fields = self._resolve_pentaho_metadata(
+                table, dsn, allow_odbc=True
+            )
+            if not fields:
+                raise TotvsHelperError(
+                    "Metadados da tabela indisponíveis para Pentaho."
+                )
             return self._actions.generate_pentaho(
                 Path(output_dir),
                 table,
@@ -831,7 +983,7 @@ class TotvsHelperApp:
             self._prefs.last_export_dir = str(job_path.parent.parent)
             save_preferences(self._prefs)
             self._set_status(f"Carga Pentaho: {job_path}", success=True)
-            self._toast.show("Carga Pentaho gerada com sucesso", "success")
+            self._toast.show("Carga Pentaho gerada.", "success")
 
         self._run_async(
             work,
@@ -845,7 +997,7 @@ class TotvsHelperApp:
             self.root.clipboard_clear()
             self.root.clipboard_append(text)
             label = self._results_screen.get_active_label()
-            self._toast.show(f"'{label}' copiado", "success")
+            self._toast.show(f"{label} copiado.", "success")
 
     def _copy_all_tabs(self) -> None:
         scripts = self._state.scripts
@@ -853,7 +1005,7 @@ class TotvsHelperApp:
             return
         self.root.clipboard_clear()
         self.root.clipboard_append(build_export_text(scripts))
-        self._toast.show("Todos os scripts copiados", "success")
+        self._toast.show("Todos os scripts copiados.", "success")
 
     def _save_txt(self) -> None:
         scripts = self._state.scripts
@@ -892,7 +1044,7 @@ class TotvsHelperApp:
             self._prefs.last_export_dir = str(path.parent)
             save_preferences(self._prefs)
             self._set_status(f"Salvo: {path}", success=True)
-            self._toast.show("Arquivo salvo", "success")
+            self._toast.show("Arquivo salvo.", "success")
             if self._prefs.ask_open_folder and ask_yes_no(
                 APP_TITLE,
                 "Abrir pasta do arquivo?",
@@ -914,7 +1066,7 @@ class TotvsHelperApp:
             self._load_dsn_list()
             self._apply_saved_dsn()
             self._show_view(SidebarView.DSN)
-            self._toast.show("Novo processo", "info")
+            self._toast.show("Novo processo iniciado.", "success")
 
     def _on_exit(self) -> None:
         if ask_ok_cancel(APP_TITLE, "Sair do Totvs Helper?", parent=self.root):
@@ -941,7 +1093,7 @@ class TotvsHelperApp:
         if resolved != self._appearance:
             apply_appearance(resolved)
             self.root.after(0, lambda: self._refresh_theme(resolved))
-        self._toast.show("Configurações salvas", "success")
+        self._toast.show("Configurações salvas.", "success")
 
     def _refresh_theme(self, appearance: str) -> None:
         """Re-apply design tokens to widgets with explicit colors."""
@@ -955,6 +1107,7 @@ class TotvsHelperApp:
 
         self._sidebar.update_tokens(t)
         self._toast.update_tokens(t)
+        self._status_banner.update_tokens(t)
         self._error_banner.update_mode(appearance)
         self._dsn_screen.update_tokens(t, appearance)
         self._table_screen.update_tokens(t, appearance)
