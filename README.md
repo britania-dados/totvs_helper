@@ -189,7 +189,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_exe.ps1 `
 
 Sem `-Python32`, gera apenas `TotvsHelper_64b.exe` (aviso no console).
 
-Bump de versão: `python scripts/bump_version.py 2.1.2`
+Bump de versão: `python scripts/bump_version.py 2.1.3` (fonte: `src/totvs_helper/version.py`)
 
 Artefatos locais do build (ignorados pelo Git):
 
@@ -218,6 +218,9 @@ Documentação para assistentes de código e onboarding técnico:
 ## Roadmap
 
 O planejamento detalhado está em [TODO.md](TODO.md).
+
+- **Fase 1 (próximo):** exportação de carga **SSIS** (`.dtsx`) no app desktop — incremental.
+- **Fase 2 (planejado):** migração para **web** no Ubuntu (JDBC + HTMX) — entrega única; substitui o `.exe`.
 
 **v2.1.1:** build gera `TotvsHelper_64b.exe` e `TotvsHelper_32b.exe` (ODBC 64/32 bits).
 

@@ -12,7 +12,7 @@ Documentação complementar:
 | [docs/ai/CONVENTIONS.md](docs/ai/CONVENTIONS.md) | Padrões de código, testes, git, changelog, o que evitar |
 | [docs/ai/PENTAHO.md](docs/ai/PENTAHO.md) | Geração de cargas PDI 9.4 (`.kjb` / `.ktr`) |
 | [CHANGELOG.md](CHANGELOG.md) | Histórico de versões — **obrigatório atualizar** em entregas com mudança visível |
-| [TODO.md](TODO.md) | Roadmap (próximo: **carga SSIS**) |
+| [TODO.md](TODO.md) | Roadmap — **Fase 1:** exportação SSIS; **Fase 2:** web (entrega única) |
 
 Regras Cursor (aplicadas automaticamente no IDE): `.cursor/rules/*.mdc`
 
@@ -22,14 +22,17 @@ Regras Cursor (aplicadas automaticamente no IDE): `.cursor/rules/*.mdc`
 
 **Totvs Helper** é um app desktop Windows (Python 3.9) que conecta em bancos **TOTVS / OpenEdge** via ODBC, lê metadados de tabelas e gera artefatos ETL:
 
-- Scripts SQL (query ETL, DDL, UPDATE, DELETE, diferencial SSIS)
+- Scripts SQL (query ETL, DDL, UPDATE, DELETE, expressão diferencial SSIS na aba de resultados)
 - Exportação Pentaho PDI 9.4 (`wkf_*.kjb` + `dataflows/dtf_*.ktr`)
+- **Em desenvolvimento (Fase 1):** exportação de pacote SSIS (`.dtsx`) — ver [TODO.md](TODO.md)
 
 **Não** executa ETL, **não** conecta em SQL Server de produção para carga — apenas gera arquivos.
 
 **Cliente / contexto:** Britânia Eletrodomésticos. UI em português; mensagens de erro e labels para usuário final em PT-BR.
 
-**Versão atual:** `src/totvs_helper/version.py` (`__version__`, hoje `2.1.2`). Bump: `python scripts/bump_version.py X.Y.Z`. Ao bumpar, atualize também **`CHANGELOG.md`**.
+**Versão atual:** `src/totvs_helper/version.py` (`__version__`, hoje `2.1.3`).
+
+**Versionamento (obrigatório em toda entrega relevante):** ao concluir a tarefa, incrementar versão com `python scripts/bump_version.py X.Y.Z` e registrar em **`CHANGELOG.md`** na mesma entrega. Na dúvida, use **PATCH** (`2.1.3` → `2.1.4`). Detalhes: [CONVENTIONS.md — Versionamento](docs/ai/CONVENTIONS.md#versionamento).
 
 ---
 
@@ -79,7 +82,24 @@ totvs_helper/
   scripts/                # build_exe.ps1, generate_icon.py
 ```
 
-**Fluxo UI (3 etapas):** DSN → Tabela/opções → Scripts (+ Pentaho). Estado em `SessionState`; operações ODBC em thread + `queue` para não travar UI.
+**Fluxo UI (3 etapas):** DSN → Tabela/opções → Scripts (+ Pentaho; + SSIS na Fase 1). Estado em `SessionState`; operações ODBC em thread + `queue` para não travar UI.
+
+---
+
+## Roadmap (fonte: [TODO.md](TODO.md))
+
+| Fase | Objetivo | Como implementar |
+|------|----------|------------------|
+| **1** | **Exportação** SSIS (`.dtsx`) no desktop | **Incremental** — etapas 1–5 no TODO (template → `services/ssis/` → botão na UI → homologação) |
+| **2** | App **web** (Ubuntu + JDBC + HTMX) | **Entrega única** — um PR com todo o checklist da Fase 2; substitui desktop |
+
+**Já existe:** scripts SQL + aba **Diferencial SSIS** (`ScriptGenerator.differential`). **Fase 1 não** recria isso — adiciona **exportar o pacote `.dtsx`**, espelhando Pentaho.
+
+**Ao codificar:**
+
+- Trabalho em **Fase 1:** seguir a etapa atual do TODO; diff mínimo; manter desktop e ODBC.
+- Pedido de **Fase 2:** implementar o **checklist completo** da Fase 2 de uma vez (não entregar só “spike JDBC” ou só API); pré-requisito = Fase 1 concluída.
+- Deploy/homologação no Ubuntu = validação humana pós-merge (`[humano]` no TODO).
 
 ---
 
@@ -114,9 +134,10 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_exe.ps1 -Python64 pytho
 | Novo script SQL / regra ETL | `services/script_generator.py`, `tests/test_script_generator.py`, `tests/expected/` |
 | Metadados / SQL OpenEdge | `infra/odbc_client.py`, testes `test_odbc_*.py` |
 | Tela / botão / layout | `ui/screens/*`, `ui/app_window.py`, `ui/widgets/*` |
-| Export Pentaho | `services/pentaho_exporter.py`, `pentaho_fields.py`, `pentaho_layout.py`, `packaging/pentaho/templates/` |
-| Versão / build | `version.py`, `packaging/windows_version_info.txt`, `totvs_helper.spec` |
-| Próximo: SSIS | Ainda não existe — ver `TODO.md`; espelhar padrão Pentaho (serviço + UI + templates) |
+| Export Pentaho | `services/pentaho/`, `packaging/pentaho/templates/`, [PENTAHO.md](docs/ai/PENTAHO.md) |
+| Export SSIS (Fase 1) | `services/ssis/` (criar), `packaging/ssis/templates/`, `AppActions.generate_ssis()`, `ResultsScreen` — ver [TODO.md](TODO.md) |
+| Versão / build desktop | `version.py`, `packaging/windows_version_info.txt`, `totvs_helper.spec` |
+| Migração web (Fase 2) | `web/`, `jdbc_client.py`, `application/` — checklist único em [TODO.md](TODO.md); remove `ui/` na mesma entrega |
 
 ---
 
@@ -137,8 +158,10 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_exe.ps1 -Python64 pytho
 - [ ] `ruff` / testes relevantes passando
 - [ ] Textos de UI em português, consistentes com telas existentes
 - [ ] Se mexer em Pentaho: validar XML bem formado e layout do perfil correto
-- [ ] **`CHANGELOG.md` atualizado** (bugfix, feature, build, breaking change ou doc que muda processo do time)
+- [ ] **Versão bumpada:** `python scripts/bump_version.py X.Y.Z` + seção correspondente em **`CHANGELOG.md`** (obrigatório em entrega relevante; ver [Versionamento](docs/ai/CONVENTIONS.md#versionamento))
 - [ ] Não commitar `.env`, `dist/`, `build/`, `build_32b/`, `build_64b/`, `.mypy_cache/`
+- [ ] Se Fase 1 SSIS: `docs/ai/SSIS.md` + etapa correspondente em `TODO.md`
+- [ ] Se Fase 2 web: checklist inteiro do TODO + breaking change no CHANGELOG
 - [ ] Atualizar `docs/ai/*` ou `AGENTS.md` só se mudou arquitetura ou contratos importantes
 
 ---

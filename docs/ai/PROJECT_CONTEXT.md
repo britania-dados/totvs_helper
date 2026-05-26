@@ -157,7 +157,14 @@ Detalhes: [PENTAHO.md](PENTAHO.md).
 
 ## Roadmap
 
-Ver [TODO.md](../../TODO.md). Próxima feature planejada: **geração de carga SSIS** (`.dtsx`), seguindo o padrão serviço + botão na `ResultsScreen` + templates versionados.
+Fonte única: [TODO.md](../../TODO.md).
+
+| Fase | Objetivo | Modo de entrega |
+|------|----------|-----------------|
+| **1** | **Exportação** de pacote SSIS (`.dtsx`) no desktop | Incremental (5 etapas: template → `services/ssis/` → UI → homologação) |
+| **2** | Migração **web** (Ubuntu, JDBC DataDirect, FastAPI + HTMX) | **Entrega única** pelo Cursor; substitui `.exe` e `ui/` |
+
+**Hoje:** scripts SQL + aba **Diferencial SSIS** (`GeneratedScripts.differential`) + export Pentaho. **Fase 1** adiciona botão **Gerar carga SSIS** (análogo a `_generate_pentaho_load`). **Fase 2** porta Pentaho e SSIS para download ZIP na web.
 
 ---
 

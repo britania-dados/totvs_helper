@@ -5,32 +5,39 @@ alwaysApply: true
 
 # Totvs Helper — regra global
 
-Leia [AGENTS.md](../../AGENTS.md) e [docs/ai/PROJECT_CONTEXT.md](../../docs/ai/PROJECT_CONTEXT.md) para contexto completo.
+Leia [AGENTS.md](../../AGENTS.md) e [docs/ai/PROJECT_CONTEXT.md](../../docs/ai/PROJECT_CONTEXT.md) para contexto completo. Roadmap detalhado: [TODO.md](../../TODO.md).
 
 ## Resumo
 
-- App desktop **Windows**, Python **3.9**, **CustomTkinter**, **pyodbc** OpenEdge.
-- Gera scripts SQL ETL + export **Pentaho PDI 9.4**; não executa cargas.
+- App desktop **Windows**, Python **3.9**, **CustomTkinter**, **pyodbc** OpenEdge (até Fase 2).
+- Gera scripts SQL ETL + export **Pentaho PDI 9.4**; **não** executa cargas.
 - Cliente: Britânia. UI e toasts em **português**.
-- Versão: `src/totvs_helper/version.py`. Ao entregar mudanças: atualizar **`CHANGELOG.md`** (ver `docs/ai/CONVENTIONS.md`).
+- Versão: `src/totvs_helper/version.py` (**2.1.3**). Ao entregar: **`bump_version.py` + `CHANGELOG.md`** na mesma entrega (ver `docs/ai/CONVENTIONS.md#versionamento`).
 
-## Camadas
+## Roadmap
+
+| Fase | O quê | Como o agente entrega |
+|------|-------|------------------------|
+| **1** (próximo) | **Exportação** SSIS `.dtsx` | **Incremental** — etapas 1–5 em [TODO.md](../../TODO.md); espelhar Pentaho |
+| **2** (planejado) | Web Ubuntu + JDBC + HTMX | **Entrega única** — checklist completo da Fase 2 num só PR; remove desktop |
+
+**Já existe:** diferencial SSIS na aba de scripts (`differential`). Fase 1 = pacote `.dtsx`, não reescrever SQL.
+
+**Fase 2:** não fazer só API ou só JDBC — implementar web + `jdbc_client` + remoção `ui/` + docs juntos.
+
+## Camadas (hoje)
 
 - `infra/odbc_client.py` — único acesso ODBC
 - `services/script_generator.py` — núcleo SQL
-- `services/pentaho_*.py` — export PDI
+- `services/pentaho/` — export PDI
 - `ui/app_window.py` — orquestra fluxo e threads
 - `ui/screens/*` — DSN → Tabela → Resultados
 
 ## Ao codificar
 
-- Diff mínimo; não refatorar fora do escopo.
-- ODBC/preview em thread; não bloquear Tk.
+- Diff mínimo; não refatorar fora do escopo da fase ativa.
+- ODBC/preview em thread; não bloquear Tk (desktop).
 - Não commitar `.env`, `dist/`, `build/`, `.mypy_cache/`.
 - Commits/push só se o usuário pedir.
-- **Atualizar `CHANGELOG.md`** em toda entrega com mudança visível (feature, fix, build, breaking).
-- Rodar `ruff check .` e `pytest` nos módulos alterados.
-
-## Roadmap
-
-Próximo: **carga SSIS** ([TODO.md](../../TODO.md)). Versão atual **2.1.2**.
+- **`bump_version.py` + `CHANGELOG.md`** em toda entrega relevante (PATCH por padrão).
+- `ruff check .` e `pytest` nos módulos alterados.

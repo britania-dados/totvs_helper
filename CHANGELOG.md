@@ -1,7 +1,15 @@
 # Changelog
 
 Todas as mudanças relevantes do projeto são registradas neste arquivo.  
-**Desenvolvedores e agentes de IA:** ao entregar código ou correções, atualize esta seção na versão em desenvolvimento (ver [CONVENTIONS.md](docs/ai/CONVENTIONS.md#changelog)).
+**Desenvolvedores e agentes de IA:** em toda entrega relevante, faça **bump de versão** (`scripts/bump_version.py`) e atualize a seção correspondente neste arquivo (ver [CONVENTIONS.md](docs/ai/CONVENTIONS.md#versionamento) e [#changelog](docs/ai/CONVENTIONS.md#changelog)).
+
+## 2.1.3
+
+### Documentação
+
+- Roadmap em [`TODO.md`](TODO.md): **Fase 1** exportação SSIS (`.dtsx`, incremental); **Fase 2** migração web Ubuntu + JDBC + HTMX (entrega única).
+- Alinhamento de `AGENTS.md`, `docs/ai/PROJECT_CONTEXT.md`, `docs/ai/README.md`, `docs/ai/CONVENTIONS.md`, `README.md` e `.cursor/rules/totvs-helper-core.mdc` com o roadmap.
+- Regra para agentes de IA: **cada entrega relevante deve incrementar a versão** automaticamente (`bump_version.py` + entrada neste changelog).
 
 ## 2.1.2
 

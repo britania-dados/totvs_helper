@@ -28,14 +28,24 @@ Regras automáticas em [`.cursor/rules/`](../../.cursor/rules/):
 - **Claude Code / CLI:** inclua `AGENTS.md` no contexto ou peça para ler `docs/ai/`.
 - **GitHub Copilot:** pode usar `AGENTS.md` (convenção suportada em vários repos).
 
+## Roadmap
+
+Planejamento em **[TODO.md](../../TODO.md)**:
+
+- **Fase 1:** exportação SSIS (`.dtsx`) no desktop — etapas incrementais.
+- **Fase 2:** app web no Ubuntu (JDBC + HTMX) — **entrega única**; ver checklist no TODO.
+
+Ao concluir uma etapa ou fase, marque checkboxes no `TODO.md` e atualize o CHANGELOG.
+
 ## Manutenção
 
 Atualize esta pasta quando:
 
-- Mudar arquitetura (novas camadas, fluxo UI).
-- Adicionar exportador (ex.: SSIS).
-- Alterar contratos de `ScriptGenerator` ou Pentaho.
+- Mudar arquitetura (novas camadas, fluxo UI ou web).
+- Concluir Fase 1: criar `docs/ai/SSIS.md` (como `PENTAHO.md`).
+- Concluir Fase 2: ARCHITECTURE, README, AGENTS (desktop → web).
+- Alterar contratos de `ScriptGenerator`, Pentaho ou SSIS.
 
-Sempre que a mudança for entregável ao time ou ao usuário, registre também em **[CHANGELOG.md](../../CHANGELOG.md)** (regra detalhada em [CONVENTIONS.md](CONVENTIONS.md#changelog)).
+Sempre que a mudança for entregável ao time ou ao usuário: **`python scripts/bump_version.py X.Y.Z`** e registro em **[CHANGELOG.md](../../CHANGELOG.md)** (regras em [CONVENTIONS.md — Versionamento](CONVENTIONS.md#versionamento) e [#changelog](CONVENTIONS.md#changelog)).
 
 O [README.md](../../README.md) permanece focado em instalação e uso humano.
