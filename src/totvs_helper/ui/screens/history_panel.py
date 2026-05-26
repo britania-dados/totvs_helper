@@ -38,12 +38,13 @@ class HistoryPanel(ctk.CTkFrame):
         header.grid(row=0, column=0, sticky="ew", pady=(0, SPACING["md"]))
         header.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(
+        self._title = ctk.CTkLabel(
             header,
             text="Histórico da sessão",
             font=subtitle_font(),
             text_color=tokens.text,
-        ).grid(row=0, column=0, sticky="w")
+        )
+        self._title.grid(row=0, column=0, sticky="w")
 
         IconButton(
             header,
@@ -55,8 +56,9 @@ class HistoryPanel(ctk.CTkFrame):
             width=100,
         ).grid(row=0, column=1)
 
-        card = Card(self, tokens, title="Gerações recentes")
-        card.grid(row=1, column=0, sticky="nsew")
+        self._card = Card(self, tokens, title="Gerações recentes")
+        self._card.grid(row=1, column=0, sticky="nsew")
+        card = self._card
         card.body.grid_columnconfigure(0, weight=1)
         card.body.grid_rowconfigure(0, weight=1)
 
@@ -119,3 +121,11 @@ class HistoryPanel(ctk.CTkFrame):
                 hover_color=self._tokens.accent_hover,
                 command=lambda e=entry: self._on_restore(e),
             ).grid(row=0, column=1, rowspan=2, padx=SPACING["md"])
+
+    def update_tokens(self, tokens: ThemeTokens) -> None:
+        self._tokens = tokens
+        self._title.configure(text_color=tokens.text)
+        self._card.update_tokens(tokens)
+        self._empty_label.configure(text_color=tokens.text_muted)
+        if self._entries:
+            self.set_entries(self._entries)

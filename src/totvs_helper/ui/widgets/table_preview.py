@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Callable, List, Optional, Sequence, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import customtkinter as ctk
 
-from totvs_helper.infra.odbc_client import TableIndexRow
+from totvs_helper.infra.odbc_client import FieldMeta, TableIndexRow
 from totvs_helper.ui.design_tokens import SPACING, ThemeTokens
 from totvs_helper.ui.widgets.sample_data_grid import SampleDataGrid
 
@@ -45,7 +45,7 @@ class TablePreviewPanel(ctk.CTkFrame):
         self._sample_offset = 0
         self._has_more = False
         self._row_count = 0
-        self._cached_fields: List[Sequence] = []
+        self._cached_fields: List[FieldMeta] = []
         self._cached_pk_fields: List[str] = []
         self._cached_indexes: List[TableIndexRow] = []
         self._overlay_master = master
@@ -178,7 +178,7 @@ class TablePreviewPanel(ctk.CTkFrame):
         self._update_nav_buttons()
         self._collapse()
 
-    def get_field_cache(self) -> Tuple[List[Sequence], List[str]]:
+    def get_field_cache(self) -> Tuple[List[FieldMeta], List[str]]:
         return self._cached_fields, self._cached_pk_fields
 
     @property
@@ -317,7 +317,7 @@ class TablePreviewPanel(ctk.CTkFrame):
     def set_data(
         self,
         table: str,
-        fields: List[Sequence],
+        fields: List[FieldMeta],
         pk_fields: List[str],
         *,
         index_rows: Optional[List[TableIndexRow]] = None,
@@ -381,3 +381,24 @@ class TablePreviewPanel(ctk.CTkFrame):
         """Clear content and return to the one-line collapsed bar."""
         self.clear()
         self._collapse()
+
+    def update_tokens(self, tokens: ThemeTokens) -> None:
+        self._tokens = tokens
+        self.configure(fg_color=tokens.surface_alt, border_color=tokens.border)
+        self._toggle_btn.configure(
+            border_color=tokens.border,
+            hover_color=tokens.surface,
+        )
+        self._page_label.configure(text_color=tokens.text_muted)
+        self._btn_prev.configure(
+            border_color=tokens.border,
+            hover_color=tokens.surface,
+        )
+        self._btn_next.configure(
+            fg_color=tokens.surface,
+            border_color=tokens.border,
+            hover_color=tokens.surface_alt,
+        )
+        self._metadata_grid.update_tokens(tokens)
+        self._indexes_grid.update_tokens(tokens)
+        self._sample_grid.update_tokens(tokens)

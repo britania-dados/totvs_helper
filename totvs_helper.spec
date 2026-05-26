@@ -1,6 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import os
+import re
 
 from PyInstaller.building.splash import Splash
 from PyInstaller.utils.hooks import collect_data_files
@@ -8,7 +9,54 @@ from PyInstaller.utils.hooks import collect_data_files
 project_dir = os.path.dirname(os.path.abspath(SPEC))
 icon_file = os.path.join(project_dir, "assets", "totvs_helper.ico")
 splash_file = os.path.join(project_dir, "assets", "splash.png")
-version_file = os.path.join(project_dir, "packaging", "windows_version_info.txt")
+
+exe_name = os.environ.get("TOTVS_HELPER_EXE_NAME", "TotvsHelper_64b")
+
+_version_py = os.path.join(project_dir, "src", "totvs_helper", "version.py")
+_version_text = open(_version_py, encoding="utf-8").read()
+_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', _version_text)
+if not _match:
+    raise RuntimeError("Nao foi possivel ler __version__ em version.py")
+__version__ = _match.group(1)
+_parts = [int(p) for p in __version__.split(".")]
+while len(_parts) < 4:
+    _parts.append(0)
+_filevers = tuple(_parts[:4])
+
+version_file = os.path.join(project_dir, "packaging", "windows_version_info.build.txt")
+with open(version_file, "w", encoding="utf-8") as _vf:
+    _vf.write(
+        f"""# UTF-8
+# Generated during build from src/totvs_helper/version.py
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers={_filevers},
+    prodvers={_filevers},
+    mask=0x3F,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+    ),
+  kids=[
+    StringFileInfo(
+      [
+      StringTable(
+        u'040904B0',
+        [StringStruct(u'CompanyName', u'TOTVS Helper Team'),
+        StringStruct(u'FileDescription', u'Totvs Helper'),
+        StringStruct(u'FileVersion', u'{__version__}'),
+        StringStruct(u'InternalName', u'{exe_name}'),
+        StringStruct(u'OriginalFilename', u'{exe_name}.exe'),
+        StringStruct(u'ProductName', u'Totvs Helper'),
+        StringStruct(u'ProductVersion', u'{__version__}')])
+      ]),
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+  ]
+)
+"""
+    )
 
 a = Analysis(
     ["main.py"],
@@ -53,7 +101,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     splash,
-    name="TotvsHelper",
+    name=exe_name,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -69,4 +117,3 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
-

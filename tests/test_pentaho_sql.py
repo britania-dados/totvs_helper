@@ -1,5 +1,6 @@
 """Tests for Pentaho SQL helpers."""
 
+from tests.conftest import field
 from totvs_helper.services.pentaho_constants import (
     DEFAULT_INCLUDE_FREE_FIELDS,
     is_multi_company_dsn,
@@ -35,7 +36,7 @@ def test_format_entity_name() -> None:
 
 def test_build_pentaho_sql_multi_empresa() -> None:
     fields = [
-        ("codigo", "character", 10, 0, "varchar"),
+        field("codigo"),
     ]
     sql = build_pentaho_table_input_sql(
         "comprador",
@@ -49,7 +50,7 @@ def test_build_pentaho_sql_multi_empresa() -> None:
 
 def test_build_pentaho_sql_with_base() -> None:
     fields = [
-        ("codigo", "character", 10, 0, "varchar"),
+        field("codigo"),
     ]
     sql = build_pentaho_table_input_sql(
         "cst-motivo",

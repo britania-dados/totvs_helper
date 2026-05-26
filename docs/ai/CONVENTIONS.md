@@ -57,7 +57,7 @@ pytest tests/test_script_generator.py tests/test_pentaho_exporter.py -q
 ## Git
 
 - **Não commitar** sem pedido explícito do usuário.
-- **Nunca** commitar `.env`, credenciais, `dist/`, `build/`, `.mypy_cache/`.
+- **Nunca** commitar `.env`, credenciais, `dist/`, `build/`, `build_32b/`, `build_64b/`, `.mypy_cache/`.
 - Mensagens de commit em **português**, frases completas (foco no porquê).
 - Não `git push --force` em `main`/`master`.
 - Não alterar `git config`.
@@ -67,7 +67,7 @@ pytest tests/test_script_generator.py tests/test_pentaho_exporter.py -q
 ## Versionamento
 
 - Fonte única: `src/totvs_helper/version.py` → `__version__`.
-- Atualizar `packaging/windows_version_info.txt` ao bump de versão para o `.exe`.
+- Ao bump de versão: `python scripts/bump_version.py X.Y.Z` (atualiza `version.py` e `windows_version_info.txt`). O build gera `windows_version_info.build.txt` no spec.
 - `pyproject.toml` usa version dinâmica do attr acima.
 
 ---

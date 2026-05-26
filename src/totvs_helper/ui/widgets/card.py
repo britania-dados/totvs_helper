@@ -28,14 +28,16 @@ class Card(ctk.CTkFrame):
         )
         self.grid_columnconfigure(0, weight=1)
 
+        self._title_label: ctk.CTkLabel | None = None
         row = 0
         if title:
-            ctk.CTkLabel(
+            self._title_label = ctk.CTkLabel(
                 self,
                 text=title,
                 font=ctk.CTkFont(size=15, weight="bold"),
                 text_color=tokens.text,
-            ).grid(
+            )
+            self._title_label.grid(
                 row=row,
                 column=0,
                 sticky="w",
@@ -54,3 +56,8 @@ class Card(ctk.CTkFrame):
         )
         self.body.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(row, weight=1)
+
+    def update_tokens(self, tokens: ThemeTokens) -> None:
+        self.configure(fg_color=tokens.surface, border_color=tokens.border)
+        if self._title_label is not None:
+            self._title_label.configure(text_color=tokens.text)

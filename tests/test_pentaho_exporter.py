@@ -6,18 +6,20 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import field
+from totvs_helper.infra.odbc_client import FieldMeta
 from totvs_helper.services.pentaho_exporter import PentahoExporter
 
 
 @pytest.fixture
-def sample_fields() -> list:
+def sample_fields() -> list[FieldMeta]:
     return [
-        ("cod-estabel", "character", 10, 0, "varchar"),
-        ("cod-local", "character", 6, 0, "varchar"),
-        ("num-docto", "character", 32, 0, "varchar"),
-        ("id-docto", "integer", 0, 0, "integer"),
-        ("dt-implant", "date", 0, 0, "datetime"),
-        ("cod-usuario", "character", 24, 0, "varchar"),
+        field("cod-estabel"),
+        field("cod-local", width=6),
+        field("num-docto", width=32),
+        field("id-docto", data_type="integer", fetch_datatype="integer"),
+        field("dt-implant", data_type="date", fetch_datatype="datetime"),
+        field("cod-usuario", width=24),
     ]
 
 

@@ -125,5 +125,9 @@ class SettingsDialog(ctk.CTkToplevel):
         export = self._export_dir.get().strip()
         self._prefs.default_export_dir = export or None
         self._prefs.ask_open_folder = bool(self._ask_open.get())
-        self._on_save(self._prefs)
+        parent = self.winfo_toplevel()
+        on_save = self._on_save
+        prefs = self._prefs
         self.destroy()
+        # Apply theme after the modal releases grab — avoids CTk freezing.
+        parent.after(0, lambda: on_save(prefs))

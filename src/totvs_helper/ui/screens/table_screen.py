@@ -32,15 +32,17 @@ class TableScreen(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        ctk.CTkLabel(
+        self._title = ctk.CTkLabel(
             self,
             text="Tabela e opções",
             font=subtitle_font(),
             text_color=tokens.text,
-        ).grid(row=0, column=0, sticky="w", pady=(0, SPACING["md"]))
+        )
+        self._title.grid(row=0, column=0, sticky="w", pady=(0, SPACING["md"]))
 
-        card = Card(self, tokens, title="Seleção de tabela")
-        card.grid(row=1, column=0, sticky="nsew")
+        self._card = Card(self, tokens, title="Seleção de tabela")
+        self._card.grid(row=1, column=0, sticky="nsew")
+        card = self._card
         card.body.grid_columnconfigure(0, weight=1)
         card.body.grid_rowconfigure(3, weight=1)
         card.body.grid_rowconfigure(4, weight=0)
@@ -135,6 +137,22 @@ class TableScreen(ctk.CTkFrame):
     def update_appearance(self, mode: str) -> None:
         self._list.update_appearance(mode)
 
+    def update_tokens(self, tokens: ThemeTokens, mode: str) -> None:
+        self._tokens = tokens
+        self._title.configure(text_color=tokens.text)
+        self._card.update_tokens(tokens)
+        self._dsn_badge.configure(
+            fg_color=tokens.surface_alt,
+            text_color=tokens.text_muted,
+        )
+        self._list.update_tokens(tokens, mode)
+        self.preview.update_tokens(tokens)
+        for btn in self._recent_buttons:
+            btn.configure(
+                border_color=tokens.border,
+                hover_color=tokens.surface_alt,
+            )
+
     def render_recent(self, tables: List[str], on_pick: Callable[[str], None]) -> None:
         for btn in self._recent_buttons:
             btn.destroy()
@@ -155,6 +173,8 @@ class TableScreen(ctk.CTkFrame):
                 height=26,
                 fg_color="transparent",
                 border_width=1,
+                border_color=self._tokens.border,
+                hover_color=self._tokens.surface_alt,
                 command=lambda n=name: on_pick(n),
             )
             btn.grid(row=0, column=index + 1, padx=3)

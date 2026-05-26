@@ -16,4 +16,4 @@ build:
 	powershell -ExecutionPolicy Bypass -File "scripts/build_exe.ps1"
 
 clean:
-	powershell -Command "if (Test-Path build) { Remove-Item -Recurse -Force build }; if (Test-Path dist) { Remove-Item -Recurse -Force dist }"
+	powershell -Command "foreach ($d in @('build','build_64b','build_32b','dist')) { if (Test-Path $d) { Remove-Item -Recurse -Force $d } }; if (Test-Path packaging/windows_version_info.build.txt) { Remove-Item -Force packaging/windows_version_info.build.txt }"

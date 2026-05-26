@@ -149,7 +149,8 @@ Detalhes: [PENTAHO.md](PENTAHO.md).
 ## Empacotamento
 
 - `totvs_helper.spec` — dados: templates Pentaho, assets, `.env` embutido no build.
-- `scripts/build_exe.ps1` — gera ícone `.ico`, invoca PyInstaller.
+- `paths.py` — caminhos dev/frozen; `scripts/build_exe.ps1` → `TotvsHelper_64b.exe` / `_32b.exe`.
+- `ui/app_actions.py` — fluxos ODBC/scripts sem Tk; `services/pentaho/` — export PDI.
 - Frozen: `sys.frozen` / `sys._MEIPASS` — templates Pentaho em `packaging/pentaho/templates` via `_default_template_root()`.
 
 ---

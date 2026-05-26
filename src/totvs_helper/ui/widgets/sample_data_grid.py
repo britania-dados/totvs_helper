@@ -7,7 +7,7 @@ from typing import List, Optional, Sequence, Tuple
 
 import customtkinter as ctk
 
-from totvs_helper.infra.odbc_client import TableIndexRow
+from totvs_helper.infra.odbc_client import FieldMeta, TableIndexRow
 from totvs_helper.ui.design_tokens import FONT_MONO, ThemeTokens
 
 INDEX_COLUMN = "#"
@@ -269,7 +269,7 @@ class SampleDataGrid(ctk.CTkFrame):
 
     def set_metadata(
         self,
-        fields: List[Sequence],
+        fields: List[FieldMeta],
         pk_fields: List[str],
     ) -> None:
         """Populate grid with ODBC field metadata (all columns)."""
@@ -281,15 +281,14 @@ class SampleDataGrid(ctk.CTkFrame):
         columns = ["Campo", "Tipo", "Largura", "Decimais", "Fetch", "PK"]
         rows: List[Tuple] = []
         for field in fields:
-            name = str(field[0])
             rows.append(
                 (
-                    name,
-                    str(field[1]),
-                    str(field[2]),
-                    str(field[3]),
-                    str(field[4]),
-                    "sim" if name in pk_set else "",
+                    field.name,
+                    field.data_type,
+                    str(field.width),
+                    str(field.decimals),
+                    field.fetch_datatype,
+                    "sim" if field.name in pk_set else "",
                 )
             )
         self.set_data(columns, rows, scroll_to_top=True)

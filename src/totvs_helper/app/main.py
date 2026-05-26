@@ -48,6 +48,7 @@ def run_with_splash(splash: "StartupSplash") -> int:
 
         from totvs_helper import __version__
         from totvs_helper.config.settings import Settings
+        from totvs_helper.errors import ConfigurationError, user_message_for
         from totvs_helper.infra.odbc_client import OdbcClient
         from totvs_helper.services.script_generator import ScriptGenerator
         from totvs_helper.ui.app_window import TotvsHelperApp
@@ -76,6 +77,19 @@ def run_with_splash(splash: "StartupSplash") -> int:
         app.root.lift()
         app.root.focus_force()
         return app.run()
+    except ConfigurationError as exc:
+        logger.exception("Erro de configuracao na inicializacao")
+        try:
+            splash.close()
+        except Exception:
+            pass
+        try:
+            from totvs_helper.ui.tk_dialogs import show_error
+
+            show_error("Totvs Helper", user_message_for(exc))
+        except Exception:
+            pass
+        return 1
     except Exception as exc:
         logger.exception("Erro fatal na inicializacao")
         parent = getattr(locals().get("app"), "root", None)

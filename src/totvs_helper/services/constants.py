@@ -1,5 +1,9 @@
 """Service-layer constants."""
 
+from typing import Iterable, List
+
+from totvs_helper.infra.odbc_client import FieldMeta
+
 FREE_FIELDS_TO_IGNORE = {
     "char-1",
     "char-2",
@@ -38,3 +42,13 @@ FREE_FIELDS_TO_IGNORE = {
     "num-livre-4",
     "num-livre-5",
 }
+
+
+def filter_fields(
+    fields: Iterable[FieldMeta], include_free_fields: bool
+) -> List[FieldMeta]:
+    """Return fields, optionally excluding standard TOTVS free-field columns."""
+    field_list = list(fields)
+    if include_free_fields:
+        return field_list
+    return [field for field in field_list if field.name not in FREE_FIELDS_TO_IGNORE]

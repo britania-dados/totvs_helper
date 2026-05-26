@@ -7,6 +7,7 @@ from typing import Callable, List, Optional
 
 import customtkinter as ctk
 
+from totvs_helper.ui.design_tokens import ThemeTokens, get_tokens
 from totvs_helper.ui.theme import listbox_colors
 
 # mov2unit_* / ems2unit_* databases expose 1000+ tables.
@@ -99,8 +100,9 @@ class SearchableList(ctk.CTkFrame):
         self._search.grid(row=1, column=0, sticky="ew", pady=(0, 8))
         self._search.bind("<KeyRelease>", self._on_search_changed)
 
-        list_frame = ctk.CTkFrame(self)
-        list_frame.grid(row=2, column=0, sticky="nsew")
+        self._list_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self._list_frame.grid(row=2, column=0, sticky="nsew")
+        list_frame = self._list_frame
         list_frame.grid_columnconfigure(0, weight=1)
         list_frame.grid_rowconfigure(0, weight=1)
 
@@ -129,7 +131,7 @@ class SearchableList(ctk.CTkFrame):
         self._count_label = ctk.CTkLabel(
             self,
             text="0 itens",
-            text_color="#9ca3af",
+            text_color=get_tokens(appearance_mode).text_muted,
             font=ctk.CTkFont(size=11),
         )
         self._count_label.grid(row=3, column=0, sticky="w", pady=(6, 0))
@@ -164,12 +166,17 @@ class SearchableList(ctk.CTkFrame):
     def update_appearance(self, mode: str) -> None:
         self._appearance_mode = mode
         colors = listbox_colors(mode)
+        tokens = get_tokens(mode)
+        self._count_label.configure(text_color=tokens.text_muted)
         self._listbox.configure(
             bg=colors["bg"],
             fg=colors["fg"],
             selectbackground=colors["selectbackground"],
             selectforeground=colors["selectforeground"],
         )
+
+    def update_tokens(self, tokens: ThemeTokens, mode: str) -> None:
+        self.update_appearance(mode)
 
     def _on_search_changed(self, _event: object = None) -> None:
         self._apply_filter()

@@ -15,21 +15,21 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 import customtkinter as ctk
 
 from totvs_helper import __version__
+from totvs_helper.errors import user_message_for
 from totvs_helper.infra.odbc_client import OdbcClient
-from totvs_helper.services.pentaho_constants import (
-    DEFAULT_INCLUDE_FREE_FIELDS,
-    is_multi_company_dsn,
-)
-from totvs_helper.services.pentaho_exporter import PentahoExporter
+from totvs_helper.paths import assets_dir
+from totvs_helper.services.pentaho import PentahoExporter
 from totvs_helper.services.script_generator import GeneratedScripts, ScriptGenerator
 from totvs_helper.services.txt_exporter import build_export_text
+from totvs_helper.ui.app_actions import AppActions
 from totvs_helper.ui.preferences import (
     UserPreferences,
     load_preferences,
     save_preferences,
 )
 from totvs_helper.ui.screens import DsnScreen, HistoryPanel, ResultsScreen, TableScreen
-from totvs_helper.ui.state import FlowStep, HistoryEntry, SessionState, SidebarView
+from totvs_helper.ui.shortcuts import bind_app_shortcuts
+from totvs_helper.ui.state import HistoryEntry, SessionState, SidebarView
 from totvs_helper.ui.theme import (
     APP_TITLE,
     SIDEBAR_WIDTH,
@@ -66,10 +66,6 @@ TAB_KEYS = (
 )
 
 
-def _assets_dir() -> Path:
-    return Path(__file__).resolve().parents[3] / "assets"
-
-
 class TotvsHelperApp:
     """Sidebar-driven wizard for Totvs Helper."""
 
@@ -84,10 +80,11 @@ class TotvsHelperApp:
         self._generator = script_generator
         self._pentaho = PentahoExporter(script_generator)
         self._state = SessionState()
+        self._actions = AppActions(
+            odbc_client, script_generator, self._pentaho, self._state
+        )
         self._prefs = load_preferences()
         self._busy = False
-        self._selected_dsn: Optional[str] = None
-        self._selected_table: Optional[str] = None
         self._dsn_list: List[str] = []
 
         resolved = resolve_appearance(self._prefs.appearance_mode)
@@ -135,8 +132,9 @@ class TotvsHelperApp:
         )
         self._sidebar.grid(row=0, column=0, sticky="ns")
 
-        main = ctk.CTkFrame(self.root, fg_color=self._t.bg)
-        main.grid(row=0, column=1, sticky="nsew", padx=(0, 16), pady=16)
+        self._main = ctk.CTkFrame(self.root, fg_color=self._t.bg)
+        self._main.grid(row=0, column=1, sticky="nsew", padx=(0, 16), pady=16)
+        main = self._main
         main.grid_columnconfigure(0, weight=1)
         main.grid_rowconfigure(2, weight=1)
 
@@ -238,18 +236,23 @@ class TotvsHelperApp:
         self._btn_next.grid(row=0, column=4, sticky="e")
 
     def _bind_shortcuts(self) -> None:
-        self.root.bind("<Return>", self._shortcut_enter)
-        self.root.bind("<Escape>", self._shortcut_escape)
-        self.root.bind("<Control-c>", self._shortcut_copy)
-        self.root.bind("<Control-C>", self._shortcut_copy)
-        self.root.bind("<Control-s>", self._shortcut_save)
-        self.root.bind("<Control-S>", self._shortcut_save)
-        self.root.bind("<Control-Shift-C>", self._shortcut_copy_all)
-        self.root.bind("<Control-Shift-c>", self._shortcut_copy_all)
-        self.root.bind("<F5>", self._shortcut_test)
-        self.root.bind("<Control-comma>", self._shortcut_settings)
-        self.root.bind_all("<Control-Tab>", self._shortcut_next_tab)
-        self.root.bind_all("<Control-Shift-Tab>", self._shortcut_prev_tab)
+        bind_app_shortcuts(
+            self.root,
+            {
+                "<Return>": self._shortcut_enter,
+                "<Escape>": self._shortcut_escape,
+                "<Control-c>": self._shortcut_copy,
+                "<Control-C>": self._shortcut_copy,
+                "<Control-s>": self._shortcut_save,
+                "<Control-S>": self._shortcut_save,
+                "<Control-Shift-C>": self._shortcut_copy_all,
+                "<Control-Shift-c>": self._shortcut_copy_all,
+                "<F5>": self._shortcut_test,
+                "<Control-comma>": self._shortcut_settings,
+                "<Control-Tab>": self._shortcut_next_tab,
+                "<Control-Shift-Tab>": self._shortcut_prev_tab,
+            },
+        )
 
     def _shortcut_next_tab(self, _event: tk.Event) -> Optional[str]:
         if self._state.view == SidebarView.RESULTS:
@@ -310,7 +313,7 @@ class TotvsHelperApp:
 
     def _set_window_icon(self) -> None:
         try:
-            icon_path = _assets_dir() / "totvs_helper_logo.png"
+            icon_path = assets_dir() / "totvs_helper_logo.png"
             if icon_path.exists():
                 img = tk.PhotoImage(file=str(icon_path))
                 self.root.iconphoto(True, img)
@@ -343,15 +346,12 @@ class TotvsHelperApp:
             screen.grid_forget()
 
         if view == SidebarView.DSN:
-            self._state.step = FlowStep.DSN
             self._dsn_screen.grid(row=0, column=0, sticky="nsew")
             self._btn_next.configure(text="Conectar →")
         elif view == SidebarView.TABLE:
-            self._state.step = FlowStep.TABLE
             self._table_screen.grid(row=0, column=0, sticky="nsew")
             self._btn_next.configure(text="Gerar scripts →")
         elif view == SidebarView.RESULTS:
-            self._state.step = FlowStep.RESULTS
             self._results_screen.grid(row=0, column=0, sticky="nsew")
             self._btn_next.configure(state="disabled")
         else:
@@ -483,7 +483,7 @@ class TotvsHelperApp:
             def on_done() -> None:
                 try:
                     if error is not None:
-                        self._on_async_error(str(error))
+                        self._on_async_error(error)
                     elif on_success is not None:
                         on_success(result)  # type: ignore[arg-type]
                 finally:
@@ -493,13 +493,14 @@ class TotvsHelperApp:
 
         threading.Thread(target=runner, daemon=True).start()
 
-    def _on_async_error(self, message: str) -> None:
+    def _on_async_error(self, error: Exception) -> None:
+        message = user_message_for(error)
         self._show_error(message)
         self._toast.show(message, "error")
 
     def _load_dsn_list(self) -> None:
-        self._dsn_list = self._odbc.list_odbcs()
-        self._dsn_screen.set_items(self._dsn_list, selected=self._selected_dsn)
+        self._dsn_list = self._actions.list_dsns()
+        self._dsn_screen.set_items(self._dsn_list, selected=self._state.selected_odbc)
         if not self._dsn_list:
             self._show_error("Nenhum DSN OpenEdge encontrado.")
 
@@ -508,15 +509,14 @@ class TotvsHelperApp:
             self._select_dsn(self._prefs.last_dsn)
 
     def _select_dsn(self, value: str) -> None:
-        self._selected_dsn = value
         self._state.selected_odbc = value
         self._dsn_screen.select_value(value)
-        self._apply_dsn_option_defaults(value)
+        self._actions.apply_dsn_option_defaults(value)
         self._set_status(f"DSN: {value}")
 
     def _select_table(self, value: str) -> None:
         if self._table_screen.preview.is_expanded:
-            current = self._selected_table
+            current = self._state.selected_table
             if current:
                 self._table_screen.select_value(current)
             self._toast.show(
@@ -524,7 +524,6 @@ class TotvsHelperApp:
                 "warning",
             )
             return
-        self._selected_table = value
         self._state.selected_table = value
         self._table_screen.select_value(value)
         self._table_screen.preview.reset()
@@ -532,7 +531,7 @@ class TotvsHelperApp:
 
     def _on_next(self) -> None:
         if self._state.view == SidebarView.DSN:
-            if not self._selected_dsn:
+            if not self._state.selected_odbc:
                 self._show_error("Selecione um DSN.")
                 return
             self._connect_and_load_tables()
@@ -542,7 +541,7 @@ class TotvsHelperApp:
     def _on_back(self) -> None:
         if self._state.view == SidebarView.TABLE:
             self._close_connection()
-            self._selected_table = None
+            self._state.selected_table = None
             self._state.tables = []
             self._table_screen.preview.reset()
             self._show_view(SidebarView.DSN)
@@ -551,30 +550,28 @@ class TotvsHelperApp:
             self._show_view(SidebarView.TABLE)
 
     def _test_connection(self) -> None:
-        if not self._selected_dsn:
+        if not self._state.selected_odbc:
             self._show_error("Selecione um DSN.")
             return
-        dsn = self._selected_dsn
+        dsn = self._state.selected_odbc
 
         def on_success(_result: object) -> None:
             self._set_status(f"Conexão OK: {dsn}", success=True)
             self._toast.show(f"Conexão com {dsn} OK", "success")
 
         self._run_async(
-            lambda: self._odbc.test_connection(dsn),
+            lambda: self._actions.test_connection(dsn),
             busy_message=f"Testando {dsn}...",
             on_success=on_success,
         )
 
     def _connect_and_load_tables(self) -> None:
-        dsn = self._selected_dsn
+        dsn = self._state.selected_odbc
         if not dsn:
             return
 
         def work() -> Tuple[object, List[str]]:
-            connection = self._odbc.connect(dsn)
-            tables = self._odbc.list_tables(connection)
-            return connection, tables
+            return self._actions.connect(dsn)
 
         def on_success(data: Tuple[object, List[str]]) -> None:
             connection, tables = data
@@ -583,11 +580,11 @@ class TotvsHelperApp:
             self._state.connection = connection
             self._state.selected_odbc = dsn
             self._state.tables = tables
-            self._selected_table = None
+            self._state.selected_table = None
             self._table_screen.preview.reset()
             self._table_screen.set_items(tables)
             self._table_screen.set_dsn_context(dsn)
-            self._apply_dsn_option_defaults(dsn)
+            self._actions.apply_dsn_option_defaults(dsn)
             self._table_screen.render_recent(
                 [t for t in self._prefs.recent_tables if t in tables],
                 on_pick=self._select_table,
@@ -618,7 +615,7 @@ class TotvsHelperApp:
         )
 
     def _load_table_preview(self, offset: int = 0) -> None:
-        table = self._selected_table or self._table_screen.get_selected()
+        table = self._state.selected_table or self._table_screen.get_selected()
         connection = self._state.connection
         if not table or connection is None:
             self._show_error("Selecione uma tabela.")
@@ -630,40 +627,12 @@ class TotvsHelperApp:
             self._table_screen.preview.set_sample_loading()
 
         def work() -> Dict[str, Any]:
-            index_rows: list = []
-            if offset == 0:
-                recid = self._odbc.get_table_recid(table)
-                fields, pk_fields = self._odbc.list_fields_and_pk(recid, connection)
-                index_rows = self._odbc.list_table_indexes(
-                    recid, connection, pk_fields
-                )
-            else:
-                fields, pk_fields = self._table_screen.preview.get_field_cache()
-                if not fields:
-                    recid = self._odbc.get_table_recid(table)
-                    fields, pk_fields = self._odbc.list_fields_and_pk(
-                        recid, connection
-                    )
-            sample_columns: Optional[List[str]] = None
-            sample_rows: Optional[list] = None
-            sample_error: Optional[str] = None
-            try:
-                sample_columns, sample_rows = self._odbc.fetch_sample_rows(
-                    table,
-                    fields,
-                    connection,
-                    offset=offset,
-                )
-            except RuntimeError as exc:
-                sample_error = str(exc)
-            return {
-                "fields": fields,
-                "pk_fields": pk_fields,
-                "index_rows": index_rows,
-                "sample_columns": sample_columns,
-                "sample_rows": sample_rows,
-                "sample_error": sample_error,
-            }
+            cached = self._table_screen.preview.get_field_cache() if offset else None
+            return self._actions.load_table_preview(
+                table,
+                offset=offset,
+                cached_fields=cached,
+            )
 
         def on_success(data: Dict[str, Any]) -> None:
             self._table_screen.preview.set_data(
@@ -691,13 +660,6 @@ class TotvsHelperApp:
             multi_company=self._state.multi_company,
         )
 
-    def _apply_dsn_option_defaults(self, dsn: str) -> None:
-        """Set Multi-empresa from DSN family; keep campos livres default on."""
-        self._apply_script_options(
-            DEFAULT_INCLUDE_FREE_FIELDS,
-            is_multi_company_dsn(dsn),
-        )
-
     def _apply_script_options(
         self, include_free_fields: bool, multi_company: bool
     ) -> None:
@@ -721,10 +683,10 @@ class TotvsHelperApp:
 
     def _generate_scripts(self) -> None:
         table = (
-            self._selected_table or self._table_screen.get_selected() or ""
+            self._state.selected_table or self._table_screen.get_selected() or ""
         ).strip()
         if table:
-            self._selected_table = table
+            self._state.selected_table = table
             self._table_screen.select_value(table)
         connection = self._state.connection
         if not table or connection is None:
@@ -755,21 +717,11 @@ class TotvsHelperApp:
         if not table or connection is None:
             return
 
-        include_free = self._state.include_free_fields
-        multi_company = self._state.multi_company
-
         def work() -> GeneratedScripts:
             fields, pk_fields = self._table_screen.preview.get_field_cache()
             if not fields:
-                recid = self._odbc.get_table_recid(table)
-                fields, pk_fields = self._odbc.list_fields_and_pk(recid, connection)
-            return self._generator.generate_helpers(
-                include_free_fields=include_free,
-                multi_company=multi_company,
-                selected_table=table,
-                fields=fields,
-                pk_fields=pk_fields,
-            )
+                fields, pk_fields = self._actions.resolve_fields_for_table(table, [])
+            return self._actions.generate_scripts(table, fields, pk_fields)
 
         def on_success(scripts: GeneratedScripts) -> None:
             if push_history:
@@ -842,7 +794,9 @@ class TotvsHelperApp:
         table = (self._state.selected_table or "").strip()
         dsn = self._state.selected_odbc or ""
         if not table or not dsn:
-            self._toast.show("Gere os scripts antes de exportar a carga Pentaho.", "warning")
+            self._toast.show(
+                "Gere os scripts antes de exportar a carga Pentaho.", "warning"
+            )
             return
 
         initial_dir = self._prefs.export_directory()
@@ -855,31 +809,15 @@ class TotvsHelperApp:
             return
 
         fields, pk_fields = self._table_screen.preview.get_field_cache()
-        connection = self._state.connection
 
         def work() -> Path:
-            if not fields and connection is not None:
-                recid = self._odbc.get_table_recid(table)
-                loaded_fields, loaded_pk = self._odbc.list_fields_and_pk(
-                    recid, connection
-                )
-                use_fields = list(loaded_fields)
-                use_pk = loaded_pk
-            else:
-                use_fields = list(fields)
-                use_pk = list(pk_fields)
-            if not use_fields:
-                raise ValueError("Metadados da tabela indisponíveis para gerar a carga.")
-            result = self._pentaho.generate(
+            return self._actions.generate_pentaho(
                 Path(output_dir),
-                progress_table=table,
-                dsn=dsn,
-                fields=use_fields,
-                pk_fields=use_pk,
-                include_free_fields=self._state.include_free_fields,
-                multi_company=self._state.multi_company,
+                table,
+                dsn,
+                fields,
+                pk_fields,
             )
-            return result.job_path
 
         def on_success(job_path: Path) -> None:
             self._prefs.last_export_dir = str(job_path.parent.parent)
@@ -960,10 +898,8 @@ class TotvsHelperApp:
         if self._state.view == SidebarView.DSN and not self._state.connection:
             return
         if ask_yes_no(APP_TITLE, "Iniciar novo processo?", parent=self.root):
-            self._close_connection()
-            self._selected_dsn = None
-            self._selected_table = None
             self._state.reset_for_new_process()
+            self._sidebar.set_connected(False)
             self._dsn_screen.search_widget().delete(0, "end")
             self._table_screen.search_widget().delete(0, "end")
             self._table_screen.preview.reset()
@@ -979,12 +915,7 @@ class TotvsHelperApp:
             self.root.destroy()
 
     def _close_connection(self) -> None:
-        if self._state.connection is not None:
-            try:
-                self._state.connection.close()
-            except Exception:
-                pass
-            self._state.connection = None
+        self._state.release_connection()
         self._sidebar.set_connected(False)
 
     def _open_settings(self) -> None:
@@ -1000,16 +931,48 @@ class TotvsHelperApp:
         save_preferences(prefs)
         resolved = resolve_appearance(prefs.appearance_mode)
         if resolved != self._appearance:
-            self._appearance = apply_appearance(resolved)
-            self._t = tokens(self._appearance)
-            self._sidebar.update_tokens(self._t)
-            self._toast.update_tokens(self._t)
-            self._dsn_screen.update_appearance(self._appearance)
-            self._table_screen.update_appearance(self._appearance)
-            self._results_screen.update_tokens(self._t)
-            self._error_banner.update_mode(self._appearance)
-            self.root.configure(fg_color=self._t.bg)
+            apply_appearance(resolved)
+            self.root.after(0, lambda: self._refresh_theme(resolved))
         self._toast.show("Configurações salvas", "success")
+
+    def _refresh_theme(self, appearance: str) -> None:
+        """Re-apply design tokens to widgets with explicit colors."""
+        self._appearance = appearance
+        self._t = tokens(appearance)
+        t = self._t
+
+        self.root.configure(fg_color=t.bg)
+        self._main.configure(fg_color=t.bg)
+        self._loading.configure(fg_color=t.bg)
+
+        self._sidebar.update_tokens(t)
+        self._toast.update_tokens(t)
+        self._error_banner.update_mode(appearance)
+        self._dsn_screen.update_tokens(t, appearance)
+        self._table_screen.update_tokens(t, appearance)
+        self._results_screen.update_tokens(t)
+        self._history_panel.update_tokens(t)
+
+        self._btn_back.configure(
+            border_color=t.border,
+            hover_color=t.surface_alt,
+            text_color=t.text,
+        )
+        self._btn_restart.configure(
+            border_color=t.border,
+            hover_color=t.surface_alt,
+            text_color=t.text,
+        )
+        self._btn_exit.configure(fg_color=t.surface_alt, text_color=t.text)
+        self._btn_next.configure(
+            fg_color=t.accent,
+            hover_color=t.accent_hover,
+            text_color="#ffffff",
+        )
+
+        self._sync_sidebar_states()
+        self._sync_footer_buttons()
+        self.root.update_idletasks()
 
     @staticmethod
     def _open_folder(directory: Path) -> None:

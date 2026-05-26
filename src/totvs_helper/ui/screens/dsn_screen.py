@@ -31,23 +31,26 @@ class DsnScreen(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        ctk.CTkLabel(
+        self._title = ctk.CTkLabel(
             self,
             text="Conexão ODBC",
             font=subtitle_font(),
             text_color=tokens.text,
-        ).grid(row=0, column=0, sticky="w", pady=(0, SPACING["md"]))
+        )
+        self._title.grid(row=0, column=0, sticky="w", pady=(0, SPACING["md"]))
 
-        card = Card(self, tokens, title="DSNs OpenEdge")
-        card.grid(row=1, column=0, sticky="nsew")
+        self._card = Card(self, tokens, title="DSNs OpenEdge")
+        self._card.grid(row=1, column=0, sticky="nsew")
+        card = self._card
         card.body.grid_rowconfigure(1, weight=1)
 
-        ctk.CTkLabel(
+        self._hint = ctk.CTkLabel(
             card.body,
             text="Selecione o DSN configurado no ODBC. Use a busca para filtrar.",
             text_color=tokens.text_muted,
             font=ctk.CTkFont(size=12),
-        ).grid(row=0, column=0, sticky="w", pady=(0, SPACING["sm"]))
+        )
+        self._hint.grid(row=0, column=0, sticky="w", pady=(0, SPACING["sm"]))
 
         self._list = SearchableList(
             card.body,
@@ -93,3 +96,9 @@ class DsnScreen(ctk.CTkFrame):
 
     def update_appearance(self, mode: str) -> None:
         self._list.update_appearance(mode)
+
+    def update_tokens(self, tokens: ThemeTokens, mode: str) -> None:
+        self._title.configure(text_color=tokens.text)
+        self._hint.configure(text_color=tokens.text_muted)
+        self._card.update_tokens(tokens)
+        self._list.update_tokens(tokens, mode)

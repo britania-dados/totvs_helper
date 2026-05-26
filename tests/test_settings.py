@@ -1,6 +1,8 @@
 import pytest
 
+from totvs_helper import paths as paths_module
 from totvs_helper.config import settings as settings_module
+from totvs_helper.errors import ConfigurationError
 
 
 def test_settings_load_raises_when_missing_required(monkeypatch):
@@ -10,7 +12,7 @@ def test_settings_load_raises_when_missing_required(monkeypatch):
     monkeypatch.delenv("TOTVS_ODBC_USER_FALLBACK", raising=False)
     monkeypatch.delenv("TOTVS_ODBC_PASSWORD_FALLBACK", raising=False)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ConfigurationError):
         settings_module.Settings.load()
 
 
@@ -27,10 +29,12 @@ def test_load_env_values_prefers_external_exe_env(tmp_path, monkeypatch):
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(settings_module.sys, "frozen", True, raising=False)
-    monkeypatch.setattr(settings_module.sys, "executable", str(tmp_path / "app.exe"))
+    monkeypatch.setattr(paths_module.sys, "frozen", True, raising=False)
     monkeypatch.setattr(
-        settings_module.sys, "_MEIPASS", str(bundled_path), raising=False
+        paths_module.sys, "executable", str(tmp_path / "app.exe"), raising=False
+    )
+    monkeypatch.setattr(
+        paths_module.sys, "_MEIPASS", str(bundled_path), raising=False
     )
     monkeypatch.delenv("TOTVS_ODBC_USER_PRIMARY", raising=False)
 

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Sequence
+from typing import Iterable, List
 
-from totvs_helper.services.constants import FREE_FIELDS_TO_IGNORE
+from totvs_helper.infra.odbc_client import FieldMeta
+from totvs_helper.services.constants import filter_fields
 
 
 @dataclass(frozen=True)
@@ -16,11 +17,6 @@ class GeneratedScripts:
     script_update: str
     differential: str
 
-    @property
-    def diferencial(self) -> str:
-        """Backward-compatible alias kept for existing callers."""
-        return self.differential
-
 
 class ScriptGenerator:
     """Service responsible for SQL and SSIS snippets generation."""
@@ -30,14 +26,10 @@ class ScriptGenerator:
         include_free_fields: bool,
         multi_company: bool,
         selected_table: str,
-        fields: Iterable[Sequence],
+        fields: Iterable[FieldMeta],
         pk_fields: list[str],
     ) -> GeneratedScripts:
-        filtered_fields = [
-            field
-            for field in fields
-            if include_free_fields or field[0] not in FREE_FIELDS_TO_IGNORE
-        ]
+        filtered_fields = filter_fields(fields, include_free_fields)
         table_formatted = selected_table.title().replace("-", "")
 
         include_base = not multi_company
@@ -73,7 +65,7 @@ class ScriptGenerator:
     def _build_etl_query(
         self,
         selected_table: str,
-        fields: list[Sequence],
+        fields: list[FieldMeta],
         multi_company: bool,
         *,
         include_base: bool = False,
@@ -93,7 +85,7 @@ class ScriptGenerator:
     def _build_ddl(
         self,
         table_formatted: str,
-        fields: list[Sequence],
+        fields: list[FieldMeta],
         pk_fields: list[str],
         multi_company: bool,
         *,
@@ -106,12 +98,10 @@ class ScriptGenerator:
             ddl_lines.append("    [BASE] [varchar](8),")
 
         for field in fields:
-            field_name = field[0]
-            width = field[2]
-            decimals = field[3]
-            fetch_datatype = field[4]
-            sql_type = self._map_sql_type(fetch_datatype, width, decimals)
-            ddl_lines.append(f"    [{field_name}] {sql_type},")
+            sql_type = self._map_sql_type(
+                field.fetch_datatype, field.width, field.decimals
+            )
+            ddl_lines.append(f"    [{field.name}] {sql_type},")
 
         ddl_lines.append("    [DATA_ALTERACAO] [datetime2](7) DEFAULT(GETDATE()),")
         ddl_lines.append("PRIMARY KEY (")
@@ -132,23 +122,21 @@ class ScriptGenerator:
 
     def _build_update_parts(
         self,
-        fields: list[Sequence],
+        fields: list[FieldMeta],
         pk_fields: list[str],
     ) -> tuple[str, str]:
         assignments: List[str] = []
         differential_parts: List[str] = []
 
         for field in fields:
-            field_name = field[0]
-            if field_name in pk_fields:
+            if field.name in pk_fields:
                 continue
 
-            fetch_datatype = field[4]
-            assignments.append(f"[{field_name}] = ?")
-            replacement = self._replacement_for_differential(fetch_datatype)
+            assignments.append(f"[{field.name}] = ?")
+            replacement = self._replacement_for_differential(field.fetch_datatype)
             differential_parts.append(
                 "REPLACENULL([{0}],{1}) != REPLACENULL([{0}_LKP],{1})".format(
-                    field_name, replacement
+                    field.name, replacement
                 )
             )
 
@@ -203,29 +191,27 @@ class ScriptGenerator:
         return f"[{fetch_datatype}]"
 
     @staticmethod
-    def _map_etl_projection(field: Sequence) -> str:
-        field_name = field[0]
-        data_type = field[1]
-        width = field[2]
-
-        if data_type == "character":
-            return f'    SUBSTRING("{field_name}",1,{width}) AS "{field_name}"'
-        if data_type == "date":
+    def _map_etl_projection(field: FieldMeta) -> str:
+        if field.data_type == "character":
+            return (
+                f'    SUBSTRING("{field.name}",1,{field.width}) AS "{field.name}"'
+            )
+        if field.data_type == "date":
             return (
                 "    case \n"
-                f"        when \"{field_name}\" <= '01/01/1900' "
+                f"        when \"{field.name}\" <= '01/01/1900' "
                 "then convert('date', '01/01/1900') \n"
-                f"        when \"{field_name}\" >= '12/31/9999' "
+                f"        when \"{field.name}\" >= '12/31/9999' "
                 "then convert('date', '12/31/9999') \n"
-                f"        else convert('date', \"{field_name}\") \n"
-                f'    end AS "{field_name}"'
+                f"        else convert('date', \"{field.name}\") \n"
+                f'    end AS "{field.name}"'
             )
-        if data_type == "logical":
+        if field.data_type == "logical":
             return (
                 "    CONVERT('bit', CASE WHEN \"{0}\" <> '1' THEN '0' "
                 "ELSE '1' END) AS \"{0}\""
-            ).format(field_name)
-        return f'    "{field_name}"'
+            ).format(field.name)
+        return f'    "{field.name}"'
 
     @staticmethod
     def _replacement_for_differential(fetch_datatype: str) -> str:

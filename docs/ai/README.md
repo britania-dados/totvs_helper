@@ -5,9 +5,10 @@ Estes arquivos orientam **Cursor**, **Claude Code** e outros agentes de código 
 ## Por onde começar
 
 1. **[AGENTS.md](../../AGENTS.md)** — entrada rápida, mapa do repo, checklist, armadilhas.
-2. **[PROJECT_CONTEXT.md](PROJECT_CONTEXT.md)** — domínio, arquitetura, fluxos, módulos.
-3. **[CONVENTIONS.md](CONVENTIONS.md)** — Python, UI, testes, git, versionamento.
-4. **[PENTAHO.md](PENTAHO.md)** — export PDI 9.4 (somente se for mexer em cargas Pentaho).
+2. **[ARCHITECTURE.md](ARCHITECTURE.md)** — camadas, fluxo, onde alterar código.
+3. **[PROJECT_CONTEXT.md](PROJECT_CONTEXT.md)** — domínio, fluxos, módulos.
+4. **[CONVENTIONS.md](CONVENTIONS.md)** — Python, UI, testes, git, versionamento.
+5. **[PENTAHO.md](PENTAHO.md)** — export PDI 9.4 (somente se for mexer em cargas Pentaho).
 
 ## Cursor IDE
 

@@ -7,7 +7,8 @@ Documentação complementar:
 | Documento | Conteúdo |
 |-----------|----------|
 | [README.md](README.md) | Instalação, build, uso humano, troubleshooting |
-| [docs/ai/PROJECT_CONTEXT.md](docs/ai/PROJECT_CONTEXT.md) | Domínio, arquitetura, fluxos, módulos |
+| [docs/ai/ARCHITECTURE.md](docs/ai/ARCHITECTURE.md) | Camadas, fluxo, onde alterar código |
+| [docs/ai/PROJECT_CONTEXT.md](docs/ai/PROJECT_CONTEXT.md) | Domínio, fluxos, módulos |
 | [docs/ai/CONVENTIONS.md](docs/ai/CONVENTIONS.md) | Padrões de código, testes, git, o que evitar |
 | [docs/ai/PENTAHO.md](docs/ai/PENTAHO.md) | Geração de cargas PDI 9.4 (`.kjb` / `.ktr`) |
 | [TODO.md](TODO.md) | Roadmap (próximo: **carga SSIS**) |
@@ -27,7 +28,7 @@ Regras Cursor (aplicadas automaticamente no IDE): `.cursor/rules/*.mdc`
 
 **Cliente / contexto:** Britânia Eletrodomésticos. UI em português; mensagens de erro e labels para usuário final em PT-BR.
 
-**Versão atual:** `src/totvs_helper/version.py` (`__version__`, hoje `2.1.0`). Sincronizar manualmente `packaging/windows_version_info.txt` no build se mudar versão.
+**Versão atual:** `src/totvs_helper/version.py` (`__version__`, hoje `2.1.1`). Bump: `python scripts/bump_version.py X.Y.Z`.
 
 ---
 
@@ -44,7 +45,7 @@ Restrições importantes:
 
 - **Windows** como alvo principal (ODBC, `.exe`, paths `%APPDATA%`).
 - **Python 3.9** — não usar sintaxe 3.10+ sem necessidade.
-- **Credenciais:** `.env` nunca commitar; build pode embutir `.env` no `.exe` (ver README).
+- **Credenciais:** `.env` nunca commitar; build embute `.env` em `TotvsHelper_64b.exe` / `TotvsHelper_32b.exe` (ver README).
 - **Mudanças mínimas** — preferir diff focado; não refatorar fora do escopo.
 - **Commits / push** só quando o usuário pedir explicitamente.
 
@@ -57,15 +58,16 @@ totvs_helper/
   main.py                 # Entry: delega para totvs_helper.app.main.run
   src/totvs_helper/
     app/main.py           # Logging, splash, wiring ODBC + UI
+    paths.py              # assets, templates, .env (dev/frozen)
     config/settings.py    # .env / variáveis ODBC
     infra/odbc_client.py  # DSN, tabelas, campos, PK, índices, amostra TOP 10
     services/
       script_generator.py   # SQL helpers (core)
-      pentaho_*.py          # Export PDI (templates XML)
-      txt_exporter.py
-      constants.py          # Campos livres ignorados, etc.
+      pentaho/            # Export PDI (templates XML)
+      constants.py        # filter_fields, campos livres
     ui/
-      app_window.py       # Orquestrador principal (estado, async, telas)
+      app_window.py       # Layout, navegação, async
+      app_actions.py      # Fluxos ODBC/scripts/Pentaho (sem Tk)
       state.py            # SessionState
       screens/            # dsn, table, results, history
       widgets/            # componentes reutilizáveis
@@ -99,7 +101,7 @@ pytest
 mypy src
 
 # Build exe (lento; só se pedido)
-.\scripts\build_exe.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\build_exe.ps1 -Python64 python -Python32 "...\python32.exe"
 ```
 
 ---
@@ -134,7 +136,7 @@ mypy src
 - [ ] `ruff` / testes relevantes passando
 - [ ] Textos de UI em português, consistentes com telas existentes
 - [ ] Se mexer em Pentaho: validar XML bem formado e layout do perfil correto
-- [ ] Não commitar `.env`, `dist/`, `build/`, `.mypy_cache/`
+- [ ] Não commitar `.env`, `dist/`, `build/`, `build_32b/`, `build_64b/`, `.mypy_cache/`
 - [ ] Atualizar `docs/ai/*` ou `AGENTS.md` só se mudou arquitetura ou contratos importantes
 
 ---

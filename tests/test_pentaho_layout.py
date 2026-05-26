@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.conftest import field
 from totvs_helper.services.pentaho_exporter import PentahoExporter
 from totvs_helper.services.pentaho_layout import (
     _EMS2UNIT_GUI,
@@ -81,8 +82,8 @@ def test_normalize_job_transformation_entry_renames_generic() -> None:
 
 def test_generated_job_uses_dtf_entry_name() -> None:
     fields = [
-        ("cod-estabel", "character", 10, 0, "varchar"),
-        ("cod-local", "character", 6, 0, "varchar"),
+        field("cod-estabel"),
+        field("cod-local", width=6),
     ]
     exporter = PentahoExporter()
     with tempfile.TemporaryDirectory() as tmp:

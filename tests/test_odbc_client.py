@@ -4,7 +4,8 @@ import pyodbc
 import pytest
 
 from totvs_helper.config.settings import Settings
-from totvs_helper.infra.odbc_client import OdbcClient
+from totvs_helper.errors import OdbcConnectionError
+from totvs_helper.infra.odbc_client import FieldMeta, OdbcClient
 
 
 @pytest.fixture()
@@ -56,7 +57,10 @@ def test_fetch_sample_rows_builds_query(settings, monkeypatch):
     cursor.fetchall.return_value = [(1, "x")]
     connection.cursor.return_value = cursor
 
-    fields = [("col-a", "char", 10, 0, "string"), ("col-b", "int", 4, 0, "integer")]
+    fields = [
+        FieldMeta("col-a", "char", 10, 0, "string"),
+        FieldMeta("col-b", "int", 4, 0, "integer"),
+    ]
     client = OdbcClient(settings)
     columns, rows = client.fetch_sample_rows(
         "my-table",
@@ -81,7 +85,7 @@ def test_fetch_sample_rows_with_offset(settings):
     cursor.fetchall.return_value = []
     connection.cursor.return_value = cursor
 
-    fields = [("col-a", "char", 10, 0, "string")]
+    fields = [FieldMeta("col-a", "char", 10, 0, "string")]
     client = OdbcClient(settings)
     client.fetch_sample_rows(
         "my-table",
@@ -118,5 +122,5 @@ def test_connect_raises_when_all_attempts_fail(settings, monkeypatch):
     monkeypatch.setattr(pyodbc, "connect", connect_mock)
     client = OdbcClient(settings)
 
-    with pytest.raises(ConnectionError):
+    with pytest.raises(OdbcConnectionError):
         client.connect("totvs_dsn")

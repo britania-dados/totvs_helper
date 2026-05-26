@@ -13,15 +13,6 @@ if TYPE_CHECKING:
     from totvs_helper.services.script_generator import GeneratedScripts
 
 
-class FlowStep(Enum):
-    """Wizard steps shown in the main window."""
-
-    DSN = "dsn"
-    TABLE = "table"
-    RESULTS = "results"
-    HISTORY = "history"
-
-
 class SidebarView(Enum):
     """Active content area (wizard step or history)."""
 
@@ -67,7 +58,6 @@ class SessionHistory:
 class SessionState:
     """Mutable session data shared across wizard steps."""
 
-    step: FlowStep = FlowStep.DSN
     view: SidebarView = SidebarView.DSN
     selected_odbc: Optional[str] = None
     selected_table: Optional[str] = None
@@ -78,9 +68,19 @@ class SessionState:
     scripts: Optional["GeneratedScripts"] = None
     history: SessionHistory = field(default_factory=SessionHistory)
 
+    def release_connection(self) -> None:
+        """Close ODBC connection if open."""
+        if self.connection is None:
+            return
+        try:
+            self.connection.close()
+        except Exception:
+            pass
+        self.connection = None
+
     def reset_for_new_process(self) -> None:
         """Clear selections and return to DSN step."""
-        self.step = FlowStep.DSN
+        self.release_connection()
         self.view = SidebarView.DSN
         self.selected_odbc = None
         self.selected_table = None

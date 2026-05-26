@@ -10,8 +10,39 @@ import pyodbc
 from pyodbc import Connection, Cursor, Row
 
 from totvs_helper.config.settings import Settings
+from totvs_helper.errors import OdbcConnectionError
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class FieldMeta:
+    """OpenEdge column metadata from PUB._field."""
+
+    name: str
+    data_type: str
+    width: int
+    decimals: int
+    fetch_datatype: str
+
+    @classmethod
+    def from_row(cls, row: Row | Sequence) -> FieldMeta:
+        return cls(
+            name=str(row[0]),
+            data_type=str(row[1]),
+            width=int(row[2] or 0),
+            decimals=int(row[3] or 0),
+            fetch_datatype=str(row[4]),
+        )
+
+    def as_tuple(self) -> tuple[str, str, int, int, str]:
+        return (
+            self.name,
+            self.data_type,
+            self.width,
+            self.decimals,
+            self.fetch_datatype,
+        )
 
 
 @dataclass(frozen=True)
@@ -68,13 +99,13 @@ class OdbcClient:
             data_source,
             last_error,
         )
-        raise ConnectionError(
+        raise OdbcConnectionError(
             f"Falha ao conectar no DSN '{data_source}'. Verifique credenciais e DSN."
         ) from last_error
 
     def list_fields_and_pk(
         self, recid_table: str, connection: Connection
-    ) -> Tuple[list[Row], list[str]]:
+    ) -> Tuple[list[FieldMeta], list[str]]:
         """Return table fields metadata and PK field names."""
         cursor = connection.cursor()
         try:
@@ -94,8 +125,9 @@ class OdbcClient:
                 recid_table,
             )
             rows = cursor.fetchall()
+            fields = [FieldMeta.from_row(row) for row in rows]
             pk_fields = self._list_pk_fields(cursor, recid_table)
-            return rows, pk_fields
+            return fields, pk_fields
         except pyodbc.Error as exc:
             raise RuntimeError("Erro ao listar campos da tabela selecionada.") from exc
         finally:
@@ -228,7 +260,7 @@ class OdbcClient:
     def fetch_sample_rows(
         self,
         table_name: str,
-        fields: Sequence[Sequence],
+        fields: Sequence[FieldMeta],
         connection: Connection,
         *,
         limit: int = 10,
@@ -238,7 +270,7 @@ class OdbcClient:
         if not fields:
             return [], []
 
-        columns = [str(field[0]) for field in fields]
+        columns = [field.name for field in fields]
         projections = ", ".join(f'"{name}"' for name in columns)
         row_offset = max(0, int(offset))
         page_size = max(1, int(limit))

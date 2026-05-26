@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 
 from dotenv import load_dotenv
+
+from totvs_helper.errors import ConfigurationError
+from totvs_helper.paths import env_search_paths
 
 logger = logging.getLogger(__name__)
 
@@ -50,29 +51,15 @@ def _get_required_env(var_name: str) -> str:
     if value:
         return value
 
-    raise ValueError(
-        f"Variavel de ambiente obrigatoria ausente: {var_name}. "
+    raise ConfigurationError(
+        f"Variável de ambiente obrigatória ausente: {var_name}. "
         "Crie um arquivo .env baseado em .env.example."
     )
 
 
 def _load_env_values(env_file: str) -> None:
     """Load environment variables from external or bundled .env file."""
-    env_paths = []
-
-    if getattr(sys, "frozen", False):
-        # Priority 1: external .env beside the executable, if present.
-        exe_dir = Path(sys.executable).resolve().parent
-        env_paths.append(exe_dir / env_file)
-
-        # Priority 2: .env bundled inside the executable by PyInstaller.
-        bundle_dir = Path(getattr(sys, "_MEIPASS", exe_dir))
-        env_paths.append(bundle_dir / env_file)
-    else:
-        project_root = Path(__file__).resolve().parents[3]
-        env_paths.append(project_root / env_file)
-
-    for env_path in env_paths:
+    for env_path in env_search_paths(env_file):
         if env_path.exists():
             load_dotenv(env_path, override=False)
             logger.info("Variaveis carregadas de %s", env_path)

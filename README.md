@@ -6,11 +6,12 @@ Ferramenta desktop em Python para apoiar a criação de cargas ETL de tabelas TO
 
 ## Distribuição interna (Britânia)
 
-O executável (**`TotvsHelper.exe`**) e o arquivo **`.env`** (credenciais ODBC) usados no dia a dia ficam na rede interna da Britânia, no diretório:
+Os executáveis (**`TotvsHelper_64b.exe`** e, se necessário, **`TotvsHelper_32b.exe`**) e o arquivo **`.env`** (credenciais ODBC) usados no dia a dia ficam na rede interna da Britânia, no diretório:
 
 `P:\TECNOLOGIA DA INFORMACAO\SISTEMAS\Desenvolvimento TI\Desenvolvimento Externo\dados\TOTVS HELPER`
 
 - Execute o programa a partir desse caminho (ou atalho apontando para ele).
+- Use **`TotvsHelper_64b.exe`** quando os DSNs OpenEdge estiverem no ODBC **64 bits** (`C:\Windows\System32\odbcad32.exe`). Use **`TotvsHelper_32b.exe`** se os DSNs existirem apenas no ODBC **32 bits** (`SysWOW64\odbcad32.exe`).
 - Alterações de credenciais devem ser feitas no `.env` dessa pasta; o arquivo **não** é versionado neste repositório.
 - Para desenvolvimento ou novo build, use `.env.example` na raiz do projeto como modelo.
 
@@ -153,33 +154,53 @@ make build
 
 ## Build do executável (.exe)
 
-O build é feito com PyInstaller para manter o processo reproduzível.
-O arquivo `.env` da raiz é embutido no executável durante o build.
+O build gera **dois** executáveis (32 e 64 bits), cada um enxergando o ODBC da mesma arquitetura:
+
+| Artefato | ODBC |
+|----------|------|
+| `dist/TotvsHelper_64b.exe` | 64 bits (`System32\odbcad32.exe`) — padrão |
+| `dist/TotvsHelper_32b.exe` | 32 bits (`SysWOW64\odbcad32.exe`) |
+
+Requisitos de build:
+
+- Python **3.9 64-bit** instalado (instalador oficial, com tkinter)
+- Python **3.9 32-bit** instalado para `TotvsHelper_32b.exe` (instalador **Windows 32-bit** do python.org ou `py -3.9-32`)
+- `.env` na raiz do projeto (embutido em ambos os `.exe`)
+
+Não use o pacote **embeddable (ZIP)** para build: ele não inclui tkinter e a UI não funciona.
+
+O arquivo `.env` da raiz é embutido em cada executável durante o build.
 O build também inclui metadados de versão Windows e ícone da aplicação.
 
 O ícone oficial fica em `assets/totvs_helper_logo.png` e é convertido para
 `assets/totvs_helper.ico` automaticamente no build.
 
 ```powershell
-.\scripts\build_exe.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\build_exe.ps1
 ```
 
-Opcionalmente, build direto com o spec versionado:
+Com Python 32-bit após instalação pela infra:
 
 ```powershell
-python -m PyInstaller --clean --noconfirm totvs_helper.spec
+powershell -ExecutionPolicy Bypass -File .\scripts\build_exe.ps1 `
+  -Python64 python `
+  -Python32 "C:\Program Files (x86)\Python39-32\python.exe"
 ```
+
+Sem `-Python32`, gera apenas `TotvsHelper_64b.exe` (aviso no console).
+
+Bump de versão: `python scripts/bump_version.py 2.1.2`
 
 Artefatos locais do build (ignorados pelo Git):
 
-- `dist/TotvsHelper.exe` — executável gerado
-- `build/` — arquivos temporários de build
+- `dist/TotvsHelper_64b.exe`, `dist/TotvsHelper_32b.exe`
+- `build_64b/`, `build_32b/` — temporários do PyInstaller
 
-Após validar o build, copie `TotvsHelper.exe` (e atualize o `.env` se necessário) para a pasta de rede da Britânia indicada na seção [Distribuição interna](#distribuição-interna-britânia).
+Após validar o build, copie os `.exe` necessários (e atualize o `.env` se preciso) para a pasta de rede da Britânia indicada na seção [Distribuição interna](#distribuição-interna-britânia).
 
 ## Troubleshooting
 
-- **Sem DSN na lista:** valide se o driver OpenEdge está instalado e o DSN foi criado.
+- **Sem DSN na lista:** valide driver OpenEdge e DSN no `odbcad32` da **mesma arquitetura** do `.exe` (64b → `System32`, 32b → `SysWOW64`).
 - **Falha de autenticação:** valide usuário/senha no `.env` da rede (ou gere novo `.exe` com `.env` atualizado no build).
 - **Erro de conexão:** teste o DSN via `odbcad32.exe`.
 - **Logs:** consulte `%APPDATA%\TotvsHelper\logs\totvs_helper.log`.
@@ -197,6 +218,8 @@ Documentação para assistentes de código e onboarding técnico:
 ## Roadmap
 
 O planejamento detalhado está em [TODO.md](TODO.md).
+
+**v2.1.1:** build gera `TotvsHelper_64b.exe` e `TotvsHelper_32b.exe` (ODBC 64/32 bits).
 
 **v2.1.0:** botão **Carga Pentaho** na tela de scripts — gera `wkf_*.kjb` + `dataflows/dtf_*.ktr` (sync, PDI 9.4) a partir dos templates em `packaging/pentaho/templates/`. Multi-empresa: 5 fontes (`EMPRESA`); não multi: campo `BASE` (VAREJO/ECOM) em uma única tabela `tot.*`.
 

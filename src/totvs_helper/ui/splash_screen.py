@@ -22,15 +22,9 @@ _WINDOW_SIZE = (520, 340)
 
 def resolve_assets_dir() -> Path:
     """Return directory containing bundled icons and logos."""
-    if getattr(sys, "frozen", False):
-        bundle = Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
-        for candidate in (bundle / "assets", bundle):
-            if (candidate / "splash_logo_ui.png").exists() or (
-                candidate / "totvs_helper_logo.png"
-            ).exists():
-                return candidate
-        return bundle
-    return Path(__file__).resolve().parents[3] / "assets"
+    from totvs_helper.paths import assets_dir
+
+    return assets_dir()
 
 
 def close_pyinstaller_splash() -> None:

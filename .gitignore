@@ -27,6 +27,9 @@ share/python-wheels/
 MANIFEST
 
 # PyInstaller
+build_32b/
+build_64b/
+packaging/windows_version_info.build.txt
 *.manifest
 
 # Installer logs

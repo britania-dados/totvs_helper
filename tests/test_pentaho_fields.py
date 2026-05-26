@@ -4,23 +4,23 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 
+from tests.conftest import field
 from totvs_helper.services.pentaho_fields import (
     apply_field_metadata,
     build_stage_select_sql,
     discover_sort_step_names,
     filter_pentaho_fields,
     stage_column_names,
-    stream_field_names,
     sync_value_field_names,
 )
 
 
 def test_filter_and_stage_sql() -> None:
     fields = [
-        ("cod-estabel", "character", 10, 0, "varchar"),
-        ("cod-local", "character", 6, 0, "varchar"),
-        ("id-docto", "integer", 0, 0, "integer"),
-        ("cod-livre-1", "character", 100, 0, "varchar"),
+        field("cod-estabel"),
+        field("cod-local", width=6),
+        field("id-docto", data_type="integer", fetch_datatype="integer"),
+        field("cod-livre-1", width=100),
     ]
     filtered = filter_pentaho_fields(fields, include_free_fields=False)
     assert len(filtered) == 3
@@ -99,9 +99,9 @@ def test_apply_field_metadata_on_minimal_ktr_fragment() -> None:
   </step>
 </transformation>"""
     fields = [
-        ("cod-estabel", "character", 10, 0, "varchar"),
-        ("cod-local", "character", 6, 0, "varchar"),
-        ("id-docto", "integer", 0, 0, "integer"),
+        field("cod-estabel"),
+        field("cod-local", width=6),
+        field("id-docto", data_type="integer", fetch_datatype="integer"),
     ]
     filtered = filter_pentaho_fields(fields, True)
     out = apply_field_metadata(
@@ -125,14 +125,15 @@ def test_apply_field_metadata_on_minimal_ktr_fragment() -> None:
 
 def test_apply_field_metadata_produces_valid_xml() -> None:
     """row-meta replacement must not nest duplicate tags."""
-    from totvs_helper.services.pentaho_exporter import PentahoExporter
-    from pathlib import Path
     import tempfile
+    from pathlib import Path
+
+    from totvs_helper.services.pentaho_exporter import PentahoExporter
 
     exporter = PentahoExporter()
     fields = [
-        ("cod-estabel", "character", 10, 0, "varchar"),
-        ("cod-local", "character", 6, 0, "varchar"),
+        field("cod-estabel"),
+        field("cod-local", width=6),
     ]
     with tempfile.TemporaryDirectory() as tmp:
         result = exporter.generate(
