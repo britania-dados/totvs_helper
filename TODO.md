@@ -57,6 +57,7 @@ pasta escolhida  →  wkf ou pacote .dtsx pronto para SSDT
 | [`ScriptGenerator`](src/totvs_helper/services/script_generator.py) | `query_etl`, `differential`, DDL/DML |
 | [`pentaho/constants.py`](src/totvs_helper/services/pentaho/constants.py) | Família DSN, multi vs não multi |
 | [`pentaho/sql.py`](src/totvs_helper/services/pentaho/sql.py) | `format_entity_name`, SQL Table Input |
+| [`ecom_emitente_keys.py`](src/totvs_helper/services/ecom_emitente_keys.py) | Remapeamento ECOM `emitente` (reutilizar no export SSIS) |
 | [`FieldMeta`](src/totvs_helper/infra/odbc_client.py) | Colunas e PK no Data Flow |
 | [`PentahoExporter`](src/totvs_helper/services/pentaho/exporter.py) | Padrão clone template + injeção XML |
 

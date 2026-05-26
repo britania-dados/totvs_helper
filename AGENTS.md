@@ -30,9 +30,9 @@ Regras Cursor (aplicadas automaticamente no IDE): `.cursor/rules/*.mdc`
 
 **Cliente / contexto:** Britânia Eletrodomésticos. UI em português; mensagens de erro e labels para usuário final em PT-BR.
 
-**Versão atual:** `src/totvs_helper/version.py` (`__version__`, hoje `2.1.3`).
+**Versão atual:** `src/totvs_helper/version.py` (`__version__`, hoje `2.1.4`).
 
-**Versionamento (obrigatório em toda entrega relevante):** ao concluir a tarefa, incrementar versão com `python scripts/bump_version.py X.Y.Z` e registrar em **`CHANGELOG.md`** na mesma entrega. Na dúvida, use **PATCH** (`2.1.3` → `2.1.4`). Detalhes: [CONVENTIONS.md — Versionamento](docs/ai/CONVENTIONS.md#versionamento).
+**Versionamento:** em toda entrega relevante, atualizar **`CHANGELOG.md`** na seção da versão atual. **Bump** (`python scripts/bump_version.py X.Y.Z`) **apenas uma vez por lote**, depois do commit que fechou a versão anterior — **não** a cada solicitação do agente. Detalhes: [CONVENTIONS.md — Versionamento](docs/ai/CONVENTIONS.md#versionamento).
 
 ---
 
@@ -158,7 +158,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_exe.ps1 -Python64 pytho
 - [ ] `ruff` / testes relevantes passando
 - [ ] Textos de UI em português, consistentes com telas existentes
 - [ ] Se mexer em Pentaho: validar XML bem formado e layout do perfil correto
-- [ ] **Versão bumpada:** `python scripts/bump_version.py X.Y.Z` + seção correspondente em **`CHANGELOG.md`** (obrigatório em entrega relevante; ver [Versionamento](docs/ai/CONVENTIONS.md#versionamento))
+- [ ] **`CHANGELOG.md`** atualizado na versão atual (obrigatório em entrega relevante)
+- [ ] **Bump** (`bump_version.py`) só se este lote fecha uma nova release após o último commit versionado (ver [Versionamento](docs/ai/CONVENTIONS.md#versionamento))
 - [ ] Não commitar `.env`, `dist/`, `build/`, `build_32b/`, `build_64b/`, `.mypy_cache/`
 - [ ] Se Fase 1 SSIS: `docs/ai/SSIS.md` + etapa correspondente em `TODO.md`
 - [ ] Se Fase 2 web: checklist inteiro do TODO + breaking change no CHANGELOG

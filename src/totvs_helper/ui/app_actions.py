@@ -102,6 +102,7 @@ class AppActions:
             selected_table=table,
             fields=fields,
             pk_fields=list(pk_fields),
+            ecom_keys=self._state.ecom_keys,
         )
 
     def resolve_fields_for_table(

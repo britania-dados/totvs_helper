@@ -104,7 +104,7 @@ class ResultsScreen(ctk.CTkFrame):
 
         self._context_frame = ctk.CTkFrame(self, fg_color="transparent")
         self._context_frame.grid(row=1, column=0, sticky="ew", padx=4, pady=(0, 8))
-        self._context_frame.grid_columnconfigure(4, weight=1)
+        self._context_frame.grid_columnconfigure(5, weight=1)
 
         self._dsn_chip = ctk.CTkLabel(
             self._context_frame,
@@ -140,7 +140,15 @@ class ResultsScreen(ctk.CTkFrame):
             font=ctk.CTkFont(size=12),
             command=self._on_script_option_changed,
         )
-        self._switch_multi_company.grid(row=0, column=3, pady=4, sticky="w")
+        self._switch_multi_company.grid(row=0, column=3, padx=(0, SPACING["lg"]), pady=4, sticky="w")
+
+        self._switch_ecom_keys = ctk.CTkSwitch(
+            self._context_frame,
+            text="ECOM",
+            font=ctk.CTkFont(size=12),
+            command=self._on_script_option_changed,
+        )
+        self._switch_ecom_keys.grid(row=0, column=4, pady=4, sticky="w")
 
         self._export_bar = ctk.CTkFrame(
             self,
@@ -271,14 +279,18 @@ class ResultsScreen(ctk.CTkFrame):
         *,
         include_free_fields: bool,
         multi_company: bool,
+        ecom_keys: bool = False,
     ) -> None:
         """Show DSN/table chips and sync option switches without firing callbacks."""
         self._dsn_chip.configure(text=f"  DSN: {dsn}  ")
         self._table_chip.configure(text=f"  Tabela: {table}  ")
-        self.set_script_options(include_free_fields, multi_company)
+        self.set_script_options(include_free_fields, multi_company, ecom_keys)
 
     def set_script_options(
-        self, include_free_fields: bool, multi_company: bool
+        self,
+        include_free_fields: bool,
+        multi_company: bool,
+        ecom_keys: bool = False,
     ) -> None:
         """Update switches without triggering regeneration."""
         self._updating_options = True
@@ -291,13 +303,18 @@ class ResultsScreen(ctk.CTkFrame):
                 self._switch_multi_company.select()
             else:
                 self._switch_multi_company.deselect()
+            if ecom_keys:
+                self._switch_ecom_keys.select()
+            else:
+                self._switch_ecom_keys.deselect()
         finally:
             self._updating_options = False
 
-    def get_script_options(self) -> Tuple[bool, bool]:
+    def get_script_options(self) -> Tuple[bool, bool, bool]:
         return (
             bool(self._switch_free_fields.get()),
             bool(self._switch_multi_company.get()),
+            bool(self._switch_ecom_keys.get()),
         )
 
     def set_scripts(self, mapping: Dict[str, str]) -> None:

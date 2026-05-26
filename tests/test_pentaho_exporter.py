@@ -69,6 +69,28 @@ def test_generate_non_multi_wms(tmp_path: Path, sample_fields: list) -> None:
     assert ktr.count("<name>cod-estabel</name>") >= 4
 
 
+def test_generate_emitente_ecom_keys_multi(tmp_path: Path) -> None:
+    """ECOM branch remaps emitente PK fields; other branches keep defaults."""
+    fields = [
+        field("cod-emitente", data_type="integer", fetch_datatype="integer"),
+        field("nome-abrev", width=30),
+    ]
+    exporter = PentahoExporter()
+    result = exporter.generate(
+        tmp_path,
+        progress_table="emitente",
+        dsn="ESP2UNIT_ELETRO",
+        fields=fields,
+        pk_fields=["cod-emitente"],
+        include_free_fields=True,
+        multi_company=True,
+    )
+    ktr = result.transformation_path.read_text(encoding="utf-8")
+    assert '(1000000000 + "cod-emitente")' in ktr
+    assert '\'E_\' + substring("nome-abrev", 1, 24)' in ktr
+    assert "dtf_Emitente" in ktr
+
+
 def test_generate_multi_ems2unit_sort_rows(tmp_path: Path, sample_fields: list) -> None:
     """ems2unit template uses Sort rows / Sort rows 2 instead of SORT STAGE."""
     exporter = PentahoExporter()

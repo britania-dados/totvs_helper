@@ -67,9 +67,19 @@ class TableScreen(ctk.CTkFrame):
         self.chk_free_fields.grid(row=0, column=0, padx=(0, SPACING["lg"]), sticky="w")
 
         self.chk_multi_company = ctk.CTkCheckBox(options, text="Multi-empresa")
-        self.chk_multi_company.grid(row=0, column=1, sticky="w")
+        self.chk_multi_company.grid(
+            row=0, column=1, padx=(0, SPACING["lg"]), sticky="w"
+        )
 
-        self.apply_option_defaults(include_free_fields=True, multi_company=True)
+        self.chk_ecom_keys = ctk.CTkCheckBox(
+            options,
+            text="ECOM (chaves emitente)",
+        )
+        self.chk_ecom_keys.grid(row=0, column=2, sticky="w")
+
+        self.apply_option_defaults(
+            include_free_fields=True, multi_company=True, ecom_keys=False
+        )
 
         self._recent_frame = ctk.CTkFrame(card.body, fg_color="transparent")
         self._recent_frame.grid(row=2, column=0, sticky="ew", pady=(0, SPACING["sm"]))
@@ -103,13 +113,18 @@ class TableScreen(ctk.CTkFrame):
         self._list.set_interactive(enabled)
         self.chk_free_fields.configure(state=state)
         self.chk_multi_company.configure(state=state)
+        self.chk_ecom_keys.configure(state=state)
         for btn in self._recent_buttons:
             btn.configure(state=state)
 
     def apply_option_defaults(
-        self, *, include_free_fields: bool, multi_company: bool
+        self,
+        *,
+        include_free_fields: bool,
+        multi_company: bool,
+        ecom_keys: bool = False,
     ) -> None:
-        """Sync Campos livres / Multi-empresa checkboxes."""
+        """Sync Campos livres / Multi-empresa / ECOM checkboxes."""
         if include_free_fields:
             self.chk_free_fields.select()
         else:
@@ -118,6 +133,10 @@ class TableScreen(ctk.CTkFrame):
             self.chk_multi_company.select()
         else:
             self.chk_multi_company.deselect()
+        if ecom_keys:
+            self.chk_ecom_keys.select()
+        else:
+            self.chk_ecom_keys.deselect()
 
     def set_dsn_context(self, dsn: str) -> None:
         self._dsn_badge.configure(text=f"  Conectado: {dsn}  ")

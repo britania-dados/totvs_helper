@@ -1,7 +1,19 @@
 # Changelog
 
 Todas as mudanças relevantes do projeto são registradas neste arquivo.  
-**Desenvolvedores e agentes de IA:** em toda entrega relevante, faça **bump de versão** (`scripts/bump_version.py`) e atualize a seção correspondente neste arquivo (ver [CONVENTIONS.md](docs/ai/CONVENTIONS.md#versionamento) e [#changelog](docs/ai/CONVENTIONS.md#changelog)).
+**Desenvolvedores e agentes de IA:** durante o ciclo de trabalho (antes do próximo commit versionado), **atualize apenas este changelog** na seção da versão atual; **não** incremente `__version__` a cada solicitação. O **PATCH** sobe **uma vez** por lote entregável, **após** o commit que fechou a versão anterior (ver [CONVENTIONS.md](docs/ai/CONVENTIONS.md#versionamento)).
+
+## 2.1.4
+
+### Adicionado
+
+- Remapeamento de chaves da tabela **emitente** na fonte **ECOM** nas cargas Pentaho (`cod-emitente` com offset `1000000000`; `nome-abrev` com prefixo `E_`), módulo compartilhado `ecom_emitente_keys.py` para reutilização no export SSIS (Fase 1).
+- Switch/checkbox **ECOM** na tela de tabela e na tela de scripts (padrão desligado): altera apenas a **Query ETL** com remapeamento de chaves da tabela `emitente`.
+
+### Documentação
+
+- Regra de negócio em [`docs/ai/PENTAHO.md`](docs/ai/PENTAHO.md) e referência em [`docs/ai/PROJECT_CONTEXT.md`](docs/ai/PROJECT_CONTEXT.md); [`TODO.md`](TODO.md) Fase 1 SSIS aponta o módulo compartilhado.
+- Política de versionamento: bump de PATCH **não** a cada tarefa do agente — apenas ao fechar um novo lote **depois** do commit da versão anterior ([CONVENTIONS.md](docs/ai/CONVENTIONS.md#versionamento)).
 
 ## 2.1.3
 

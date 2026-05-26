@@ -176,6 +176,7 @@ class PentahoExporter:
                 filtered,
                 include_free_fields=True,
                 empresa_code=empresa_code,
+                ecom_source=step_name == "ECOM",
             )
             body = _replace_step_sql(body, step_name, sql)
 
@@ -217,6 +218,7 @@ class PentahoExporter:
                 filtered,
                 include_free_fields=True,
                 base_code=base_code,
+                ecom_source=base_code == "ECOM",
             )
             body = _replace_step_sql(body, step_name, sql)
 

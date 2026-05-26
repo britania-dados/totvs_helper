@@ -31,6 +31,7 @@ class HistoryEntry:
     include_free_fields: bool
     multi_company: bool
     scripts: "GeneratedScripts"
+    ecom_keys: bool = False
     created_at: datetime = field(default_factory=datetime.now)
 
     @property
@@ -63,6 +64,7 @@ class SessionState:
     selected_table: Optional[str] = None
     include_free_fields: bool = True
     multi_company: bool = True
+    ecom_keys: bool = False
     tables: List[str] = field(default_factory=list)
     connection: Optional["Connection"] = None
     scripts: Optional["GeneratedScripts"] = None
@@ -86,5 +88,6 @@ class SessionState:
         self.selected_table = None
         self.include_free_fields = True
         self.multi_company = True
+        self.ecom_keys = False
         self.tables = []
         self.scripts = None

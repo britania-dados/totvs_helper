@@ -50,6 +50,21 @@ Em runtime frozen: `sys._MEIPASS/packaging/pentaho/templates`.
 - Uma tabela `tot.{Entidade}` — sem `dtf_ecom_*` separado.
 - DDL/query do `ScriptGenerator` com `[BASE] varchar(8)` na PK quando `multi_company=False`.
 
+### Emitente na base ECOM (chaves de stage)
+
+Cadastros de emitente em **varejo** e **ECOM** são distintos; o mesmo `cod-emitente` pode existir nas duas bases. Nas cargas para `stage`/`tot`, apenas o ramo **ECOM** do KTR aplica remapeamento (passo `ECOM` no multi; passo `WMS_ECOM` / `ECOM` no não multi com `BASE = 'ECOM'`):
+
+| Campo | Projeção OpenEdge no Table Input |
+|-------|----------------------------------|
+| `cod-emitente` | `(1000000000 + "cod-emitente")` |
+| `nome-abrev` | `'E_' + substring("nome-abrev", 1, 24)` |
+
+Implementação compartilhada: [`ecom_emitente_keys.py`](../../src/totvs_helper/services/ecom_emitente_keys.py), usada em [`pentaho/sql.py`](../../src/totvs_helper/services/pentaho/sql.py) via parâmetro `ecom_source` em `build_pentaho_table_input_sql`. Demais estabelecimentos/bases **não** alteram esses campos.
+
+Na tela de scripts, o switch **ECOM** (desligado por padrão) aplica a mesma regra só na aba **Query ETL** (`map_ecom_emitente_etl_projection`); DDL/UPDATE/DELETE não mudam.
+
+**SSIS (Fase 1):** reutilizar o mesmo módulo na SQL da origem OpenEdge quando o perfil incluir fonte ECOM e a tabela for `emitente`.
+
 ### Família ems2unit (template `multi_ems2unit`)
 
 Fluxo extra vs esp2unit:

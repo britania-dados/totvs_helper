@@ -46,6 +46,6 @@ Atualize esta pasta quando:
 - Concluir Fase 2: ARCHITECTURE, README, AGENTS (desktop → web).
 - Alterar contratos de `ScriptGenerator`, Pentaho ou SSIS.
 
-Sempre que a mudança for entregável ao time ou ao usuário: **`python scripts/bump_version.py X.Y.Z`** e registro em **[CHANGELOG.md](../../CHANGELOG.md)** (regras em [CONVENTIONS.md — Versionamento](CONVENTIONS.md#versionamento) e [#changelog](CONVENTIONS.md#changelog)).
+Sempre que a mudança for entregável: registro em **[CHANGELOG.md](../../CHANGELOG.md)** na versão atual. **`python scripts/bump_version.py X.Y.Z`** só ao fechar um novo lote **depois** do commit da versão anterior — não a cada tarefa (regras em [CONVENTIONS.md — Versionamento](CONVENTIONS.md#versionamento)).
 
 O [README.md](../../README.md) permanece focado em instalação e uso humano.

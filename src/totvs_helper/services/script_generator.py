@@ -7,6 +7,7 @@ from typing import Iterable, List
 
 from totvs_helper.infra.odbc_client import FieldMeta
 from totvs_helper.services.constants import filter_fields
+from totvs_helper.services.ecom_emitente_keys import map_ecom_emitente_etl_projection
 
 
 @dataclass(frozen=True)
@@ -28,13 +29,19 @@ class ScriptGenerator:
         selected_table: str,
         fields: Iterable[FieldMeta],
         pk_fields: list[str],
+        *,
+        ecom_keys: bool = False,
     ) -> GeneratedScripts:
         filtered_fields = filter_fields(fields, include_free_fields)
         table_formatted = selected_table.title().replace("-", "")
 
         include_base = not multi_company
         query_etl = self._build_etl_query(
-            selected_table, filtered_fields, multi_company, include_base=include_base
+            selected_table,
+            filtered_fields,
+            multi_company,
+            include_base=include_base,
+            ecom_keys=ecom_keys,
         )
         update_assignments, differential = self._build_update_parts(
             filtered_fields, pk_fields
@@ -69,6 +76,7 @@ class ScriptGenerator:
         multi_company: bool,
         *,
         include_base: bool = False,
+        ecom_keys: bool = False,
     ) -> str:
         projections: List[str] = []
         if multi_company:
@@ -77,7 +85,13 @@ class ScriptGenerator:
             projections.append("    '' as \"BASE\"")
 
         for field in fields:
-            projections.append(self._map_etl_projection(field))
+            ecom_line = map_ecom_emitente_etl_projection(
+                field, progress_table=selected_table, ecom_keys=ecom_keys
+            )
+            if ecom_line is not None:
+                projections.append(ecom_line)
+            else:
+                projections.append(self._map_etl_projection(field))
 
         query_body = ", \n".join(projections)
         return f'SELECT \n{query_body}\nfrom PUB."{selected_table}" WITH (NOLOCK)'

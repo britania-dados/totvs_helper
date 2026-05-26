@@ -29,4 +29,25 @@ def test_generate_scripts_uses_state_flags():
     kwargs = generator.generate_helpers.call_args.kwargs
     assert kwargs["include_free_fields"] is False
     assert kwargs["multi_company"] is True
+    assert kwargs["ecom_keys"] is False
     assert kwargs["selected_table"] == "my-table"
+
+
+def test_generate_scripts_passes_ecom_keys_flag():
+    odbc = Mock()
+    generator = Mock()
+    generator.generate_helpers.return_value = GeneratedScripts(
+        query_etl="q",
+        ddl_create="d",
+        script_delete="del",
+        script_update="u",
+        differential="diff",
+    )
+    pentaho = Mock()
+    state = SessionState()
+    state.ecom_keys = True
+
+    actions = AppActions(odbc, generator, pentaho, state)
+    actions.generate_scripts("emitente", [field("cod-emitente")], ["cod-emitente"])
+
+    assert generator.generate_helpers.call_args.kwargs["ecom_keys"] is True

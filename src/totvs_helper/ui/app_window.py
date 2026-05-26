@@ -658,23 +658,26 @@ class TotvsHelperApp:
         self._table_screen.apply_option_defaults(
             include_free_fields=self._state.include_free_fields,
             multi_company=self._state.multi_company,
+            ecom_keys=self._state.ecom_keys,
         )
 
     def _apply_script_options(
-        self, include_free_fields: bool, multi_company: bool
+        self, include_free_fields: bool, multi_company: bool, ecom_keys: bool
     ) -> None:
         self._state.include_free_fields = include_free_fields
         self._state.multi_company = multi_company
+        self._state.ecom_keys = ecom_keys
         self._sync_table_option_checkboxes()
 
     def _on_results_script_options_changed(self) -> None:
-        include_free, multi_company = self._results_screen.get_script_options()
+        include_free, multi_company, ecom_keys = self._results_screen.get_script_options()
         if (
             include_free == self._state.include_free_fields
             and multi_company == self._state.multi_company
+            and ecom_keys == self._state.ecom_keys
         ):
             return
-        self._apply_script_options(include_free, multi_company)
+        self._apply_script_options(include_free, multi_company, ecom_keys)
         self._regenerate_scripts(
             push_history=False,
             navigate_to_results=False,
@@ -696,7 +699,8 @@ class TotvsHelperApp:
 
         include_free = bool(self._table_screen.chk_free_fields.get())
         multi_company = bool(self._table_screen.chk_multi_company.get())
-        self._apply_script_options(include_free, multi_company)
+        ecom_keys = bool(self._table_screen.chk_ecom_keys.get())
+        self._apply_script_options(include_free, multi_company, ecom_keys)
         self._regenerate_scripts(
             table=table,
             push_history=True,
@@ -754,6 +758,7 @@ class TotvsHelperApp:
             include_free_fields=self._state.include_free_fields,
             multi_company=self._state.multi_company,
             scripts=scripts,
+            ecom_keys=self._state.ecom_keys,
         )
         self._state.history.add(entry)
 
@@ -772,6 +777,7 @@ class TotvsHelperApp:
             table,
             include_free_fields=self._state.include_free_fields,
             multi_company=self._state.multi_company,
+            ecom_keys=self._state.ecom_keys,
         )
 
     def _restore_history_entry(self, entry: HistoryEntry) -> None:
@@ -779,7 +785,9 @@ class TotvsHelperApp:
         self._state.selected_table = entry.table
         self._state.selected_odbc = entry.dsn
         self._apply_script_options(
-            entry.include_free_fields, entry.multi_company
+            entry.include_free_fields,
+            entry.multi_company,
+            entry.ecom_keys,
         )
         self._display_results(entry.scripts, entry.table)
         self._show_view(SidebarView.RESULTS)

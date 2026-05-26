@@ -29,11 +29,11 @@ def test_results_screen_script_options_sync_without_callback() -> None:
             include_free_fields=False,
             multi_company=True,
         )
-        assert screen.get_script_options() == (False, True)
+        assert screen.get_script_options() == (False, True, False)
         assert calls == []
 
-        screen.set_script_options(True, False)
-        assert screen.get_script_options() == (True, False)
+        screen.set_script_options(True, False, True)
+        assert screen.get_script_options() == (True, False, True)
         assert calls == []
     finally:
         root.destroy()

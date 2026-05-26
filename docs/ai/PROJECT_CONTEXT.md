@@ -109,6 +109,7 @@ Flags:
 
 - `include_free_fields` — filtra `FREE_FIELDS_TO_IGNORE`.
 - `multi_company` — coluna `empresa`; se False, pode incluir `BASE` varchar(8) na PK (não multi).
+- `ecom_keys` — na **Query ETL** apenas, aplica remapeamento de `cod-emitente` / `nome-abrev` para tabela `emitente` (padrão desligado); cargas Pentaho aplicam a regra automaticamente no ramo ECOM.
 
 Testes golden em `tests/expected/*.sql` e `tests/test_script_generator.py`.
 
@@ -176,4 +177,5 @@ Fonte única: [TODO.md](../../TODO.md).
 | Multi-empresa | Uma única tabela `tot.*` com coluna `EMPRESA` (5 estabelecimentos) |
 | Não multi | Coluna `BASE` (ex. VAREJO/ECOM) unifica origens |
 | Stage | Conexão MSSQL `STAGE` nos KTR (destino da sync) |
+| Emitente ECOM | Chaves `cod-emitente` / `nome-abrev` remapeadas só na fonte ECOM — ver [PENTAHO.md — Emitente ECOM](PENTAHO.md#emitente-na-base-ecom-chaves-de-stage) |
 | Sync | Apenas `MergeRows` + `SynchronizeAfterMerge` (sem truncate full) |

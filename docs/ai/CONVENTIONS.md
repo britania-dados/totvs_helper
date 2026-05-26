@@ -70,30 +70,41 @@ pytest tests/test_script_generator.py tests/test_pentaho_exporter.py -q
 - Comando: `python scripts/bump_version.py X.Y.Z` (atualiza `version.py` e `packaging/windows_version_info.txt`). O build gera `windows_version_info.build.txt` no spec.
 - `pyproject.toml` usa version dinâmica do attr acima.
 
-### Bump automático (agentes de IA e devs)
+### Quando subir a versão (PATCH / MINOR / MAJOR)
 
-**Toda entrega relevante** (código, comportamento, build, contrato ou documentação de processo que o time/IA deve seguir) **deve** terminar com novo número de versão — não deixar `__version__` desatualizado em relação ao `CHANGELOG.md`.
+`__version__` em `version.py` é a **versão do último commit versionado** (release fechada). **Não** incrementar o PATCH a cada solicitação, tarefa de agente ou PR intermediário.
+
+| Momento | O que fazer |
+|---------|-------------|
+| **Durante o ciclo** (várias alterações ainda sem commit da próxima versão) | Registrar mudanças em [`CHANGELOG.md`](../../CHANGELOG.md) na seção **`## X.Y.Z` atual** (ex.: `2.1.4`). **Não** rodar `bump_version.py`. |
+| **Ao fechar um novo lote entregável**, depois do commit que encerrou a versão anterior | **Uma vez:** `python scripts/bump_version.py X.Y.Z` + seção `## X.Y.Z` no changelog (se ainda não existir). Tipicamente junto ao commit que entrega o lote, ou quando o usuário pedir commit/release. |
 
 | Tipo de entrega | Incremento | Exemplo |
 |-----------------|--------------|---------|
-| Bugfix, ajuste de doc de processo, checklist | **PATCH** (`Z`) | `2.1.3` → `2.1.4` |
+| Bugfix, ajuste de doc de processo, checklist | **PATCH** (`Z`) | `2.1.3` → `2.1.4` (um PATCH por lote, não por tarefa) |
 | Feature nova (ex.: export SSIS) | **MINOR** (`Y`) | `2.1.4` → `2.2.0` |
 | Breaking change (ex.: desktop → web) | **MAJOR** (`X`) | `2.2.0` → `3.0.0` |
 
-Fluxo obrigatório ao encerrar a tarefa:
+Fluxo ao encerrar uma tarefa **no meio do ciclo** (ainda sem novo release):
 
 1. Implementar a mudança.
+2. Atualizar a seção da versão **atual** em [`CHANGELOG.md`](../../CHANGELOG.md) (bullets em Adicionado/Alterado/Corrigido).
+3. **Não** alterar `version.py` se já houve bump no commit anterior e este lote ainda não foi commitado como nova versão.
+
+Fluxo ao **fechar** um lote para commit/release (após o commit da versão anterior):
+
+1. Consolidar entradas no changelog.
 2. Definir `X.Y.Z` (na dúvida, **PATCH**).
 3. `python scripts/bump_version.py X.Y.Z`
-4. Criar ou atualizar a seção `## X.Y.Z` em [`CHANGELOG.md`](../../CHANGELOG.md).
+4. Commit (quando o usuário pedir) com `version.py`, `CHANGELOG.md` e o código do lote.
 
-**Não** fazer bump apenas por typos em comentário sem efeito para usuário/dev — use critério; na dúvida, bump PATCH e registre.
+**Não** fazer bump por typos em comentário sem efeito para usuário/dev. **Não** fazer dois PATCH seguidos (`2.1.4` → `2.1.5` → `2.1.6`) no mesmo ciclo sem commit intermediário que fechou `2.1.4`.
 
 ## Changelog
 
-**Obrigatório** atualizar [`CHANGELOG.md`](../../CHANGELOG.md) na **mesma entrega** do bump de versão.
+**Obrigatório** manter [`CHANGELOG.md`](../../CHANGELOG.md) alinhado ao trabalho em andamento: bullets na versão atual durante o ciclo; ao subir versão, a seção `## X.Y.Z` nova coincide com o bump.
 
-Inclua a entrada na seção `## X.Y.Z` recém-criada (após `bump_version.py`), usando as categorias já adotadas:
+Inclua entradas na seção da versão em edição (`## X.Y.Z` atual ou recém-criada após `bump_version.py`), usando as categorias já adotadas:
 
 | Categoria | Quando usar |
 |-----------|-------------|
@@ -104,7 +115,7 @@ Inclua a entrada na seção `## X.Y.Z` recém-criada (após `bump_version.py`), 
 
 **Não precisa** changelog para typos isolados em comentário ou ajuste puramente interno sem efeito para usuário/dev — use critério; na dúvida, registre.
 
-Agentes de IA: **versionamento + changelog** fazem parte da definição de pronto, no mesmo nível de `ruff` e `pytest` nos módulos alterados.
+Agentes de IA: **changelog** em toda entrega relevante; **bump de versão** só ao fechar lote pós-commit da versão anterior (não a cada prompt). `ruff` e `pytest` nos módulos alterados continuam obrigatórios.
 
 ---
 
